@@ -38,7 +38,7 @@ Authorization: CLIENT_TOKEN
 | `items[].amount` | number | No | Quantity for stackable Rust items (default: 1, max: 10000) |
 | `game` | string | No | `"730"` or `"252490"`. Defaults to `"730"`. |
 | `externalId` | string | No | Your unique tracking ID (max 128 chars). Must be unique per trade. |
-| `isInstant` | boolean | No | Request instant credit during hold period (default: `true`) |
+| `isInstant` | boolean | No | Request instant credit during the hold period (default `false`). Fails with `INSTANT_DEPOSITS_DISABLED` if instant deposits are off for your account. |
 
 ## Response
 
@@ -69,7 +69,6 @@ Authorization: CLIENT_TOKEN
         "marketPrice": 12.50,
         "offer": {
           "price": 10.75,
-          "reference": "ref_abc123",
           "accepted": true
         },
         "exterior": "Field-Tested",
@@ -125,4 +124,4 @@ An "active" deposit is any not-yet-accepted trade (`initiated` or `active`). The
 | 1005 | `RATE_LIMITED` | Client exceeded 10 deposits / 5 min (see Rate Limits) |
 | 1010 | `NO_BOTS_AVAILABLE` | No Steam bots online; retry shortly |
 | 1011 | `FLEET_DEGRADED` | Steam fleet degraded; retry shortly |
-| 1622 | `INSTANT_DEPOSITS_DISABLED` | Instant deposits temporarily disabled (request without `isInstant: true`) |
+| 1622 | `INSTANT_DEPOSITS_DISABLED` | Instant deposits are disabled for your account and the request set `isInstant: true` (omit the field or send `false`) |

@@ -83,7 +83,7 @@ For Rust items that are stackable, you can specify an `amount`:
 | `items[].amount` | number | No | Quantity for stackable items (default: 1, max: 10000) |
 | `game` | string | No | `"730"` (CS2) or `"252490"` (Rust). Defaults to `"730"`. |
 | `externalId` | string | No | Your unique tracking ID (max 128 chars). Stored as `externalId` on the trade. |
-| `isInstant` | boolean | No | Whether to request instant credit (default: `true`). |
+| `isInstant` | boolean | No | Whether to request instant credit (default `false`). |
 
 ## Rate Limits
 
@@ -126,7 +126,7 @@ The response contains the full trade object:
 
 ## Instant Deposits
 
-By default, `isInstant` is `true`. When enabled, AssetPay calculates how much of the deposit value can be credited instantly based on collateral, rather than waiting for the full 7-day hold period.
+`isInstant` defaults to `false`, so a deposit is fully held unless you ask for instant credit. Sending `isInstant: true` fails with `INSTANT_DEPOSITS_DISABLED` if instant deposits are off for your account. When instant credit applies, AssetPay calculates how much of the deposit value can be credited instantly based on collateral, rather than waiting for the full 7-day hold period.
 
 When a deposit enters `hold` status, the trade object includes:
 
@@ -134,7 +134,7 @@ When a deposit enters `hold` status, the trade object includes:
 - `pendingCredit` - the remaining amount held until the hold period ends
 - `collateral` - breakdown of collateral sources
 
-If `isInstant` is set to `false`, the entire amount waits until `completed`.
+If `isInstant` is `false` or omitted, the entire amount waits until `completed`.
 
 The `collateral` field in the inventory response tells you the total instant credit available for that user before they start depositing.
 

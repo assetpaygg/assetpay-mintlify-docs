@@ -37,7 +37,7 @@ api-key: ap_...
 | `items[].amount` | number | No | Quantity for stackable Rust items (default `1`) |
 | `game` | string | No | `"730"` or `"252490"`. Defaults to `"730"`. |
 | `externalId` | string | No | Your unique tracking ID |
-| `isInstant` | boolean | No | Request instant credit (default `true`) |
+| `isInstant` | boolean | No | Request instant credit (default `false`). Fails with `INSTANT_DEPOSITS_DISABLED` if instant deposits are off for your account. |
 
 ## Response
 

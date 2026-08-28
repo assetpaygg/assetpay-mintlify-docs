@@ -12,7 +12,7 @@ Rust trades have **no trade protection period**. Rust deposits are always credit
 
 ## How It Works
 
-When a user deposits CS2 skins with `isInstant: true` (the default), AssetPay splits the deposit value into two parts:
+When a user deposits CS2 skins with `isInstant: true`, AssetPay splits the deposit value into two parts:
 
 - **`preCredit`** - credited to the user's balance immediately when the trade enters `hold` status
 - **`pendingCredit`** - credited when the 7-day hold ends and the trade reaches `completed`
@@ -103,7 +103,7 @@ This means an unverified user depositing \$500 worth of skins will receive at mo
 
 ## Enabling Instant Credit
 
-Instant credit is enabled by default. When you initiate a deposit, the `isInstant` field defaults to `true`:
+Instant credit is off by default. To request it, set `isInstant: true` when you initiate a deposit (this fails with `INSTANT_DEPOSITS_DISABLED` if instant deposits are off for your account):
 
 ```json
 {
@@ -113,7 +113,7 @@ Instant credit is enabled by default. When you initiate a deposit, the `isInstan
 }
 ```
 
-Set `isInstant: false` to skip instant credit entirely. The full amount will be held until `completed`.
+Omit `isInstant` (or send `false`) to skip instant credit entirely. The full amount will be held until `completed`.
 
 ## Reading the Collateral
 
