@@ -26,7 +26,7 @@ api-key: ap_...
 | `maxPrice` | number | — | Maximum price filter (USD) |
 | `page` | number | `1` | Page number |
 | `perPage` | number | `50` | Items per page (min 1, max 1000) |
-| `source` | string | — | Set to `internal` to restrict results to the AssetPay pool. Omit for all suppliers. Ignored when `development` is set. |
+| `source` | string | — | Set to `internal` to restrict results to the AssetPay pool, or `external` to restrict them to third-party marketplace listings (refreshed every 5 minutes). Omit for both. Ignored when `development` is set. |
 | `development` | boolean | `false` | Sandbox flag. When `true` (or `1`), every returned item is stamped with instant delivery, a placeholder `previewToken`, and a synthetic holding `botInfo` so you can build against the full item shape using cheap live listings. The `source` filter is ignored. |
 
 ## Response

@@ -5671,7 +5671,7 @@
               "type": "string",
               "enum": [
                 "internal",
-                "skinshark",
+                "external",
                 "Xk9W"
               ]
             },
