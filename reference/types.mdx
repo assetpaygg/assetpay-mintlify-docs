@@ -75,6 +75,11 @@ interface Item {
   id: string;                    // On CS2 withdraw items, the listing id you quoted — stable for the
                                  //   item's whole life. On inventory and deposit items, the encoded
                                  //   item id. Cancel endpoints accept it alongside externalId.
+  itemId?: string;               // The parent catalog item this listing belongs to — the same id you
+                                 //   pass to /market/item, while id above is the individual listing.
+                                 //   CS2 GET /market rows only: /market/item omits it because you
+                                 //   named the item in the request, and it is never present on Rust,
+                                 //   inventory, deposit or withdraw items.
   externalId?: string;           // Your own per-item reference, when you supplied one at buy time.
                                  //   Cancel accepts it in place of id. Omitted on stacked Rust rows,
                                  //   which stand for several items at once.
@@ -137,12 +142,6 @@ The marketplace offer carried on an `Item.offer`:
 ```typescript
 interface ItemOffer {
   price: number;                 // Offer price in USD
-  reference?: string;            // Parent product reference (e.g. "0010f8d48278ccb8")
-                                 //   — the id you query /market/item with. The
-                                 //   listing-specific id is the surrounding Item.id.
-                                 //   Present on market/inventory items. Omitted on
-                                 //   freshly-initiated withdraw items; backfilled
-                                 //   from callbacks as the trade progresses.
   delivery?: DeliveryMode;       // "standard" or "instant" (market items only)
   maxAmount?: number;            // Max quantity for stackable items (inventory only)
   accepted?: boolean;            // Whether the item is accepted for deposit (deposit-side inventory only)

@@ -46,7 +46,6 @@ Authorization: CLIENT_TOKEN
       "tradable": true,
       "offer": {
         "price": 10.50,
-        "reference": "ref_listing_001",
         "delivery": "standard"
       },
       "exterior": "Field-Tested",
@@ -70,7 +69,6 @@ Authorization: CLIENT_TOKEN
       "tradable": true,
       "offer": {
         "price": 9.80,
-        "reference": "ref_listing_002",
         "delivery": "instant"
       },
       "wear": "0.35678",
@@ -85,6 +83,10 @@ Each listing represents a specific item instance with its own float value, stick
 
 <Note>
 This endpoint is currently CS2-only. Rust withdrawals don't use per-variant listings — the cheapest available stack is sourced when the withdrawal is purchased.
+</Note>
+
+<Note>
+Listings here carry no `itemId` — you named the item in the request, and every row belongs to it. `id` identifies the individual listing and is what you pass to a withdrawal. `itemId` appears on [`GET /client/market`](/api-reference/client/get-market) rows, where the response spans many items.
 </Note>
 
 ## Rate Limits

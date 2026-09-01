@@ -142,7 +142,7 @@ In both cases, the final delivery to the user is via a Steam trade offer they mu
 Market prices change frequently. You have two options to keep your UI current:
 
 1. **Polling**: Refetch market data periodically (every 30-60 seconds is reasonable)
-2. **WebSocket**: Subscribe to the `market` event for real-time item and price changes on the `internal` source, pushed already priced for your account (see [Market Updates](/guides/websocket#market-updates))
+2. **WebSocket**: Subscribe to the `market` event for real-time item and price changes, pushed already priced for your account. Covers both CS2 and Rust on one connection (see [Market Updates](/guides/websocket#market-updates))
 
 When a user clicks "Buy", always validate that the price hasn't changed since they last loaded the page. If it has, show them the updated price before proceeding.
 

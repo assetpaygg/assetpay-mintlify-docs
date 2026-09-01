@@ -37,6 +37,7 @@ Authorization: CLIENT_TOKEN
     "items": [
       {
         "id": "e5f6g7h8-...",
+        "itemId": "0010f8d48278ccb8",
         "name": "AWP | Asiimov",
         "marketHashName": "AWP | Asiimov (Field-Tested)",
         "type": "Sniper Rifle",
@@ -46,7 +47,6 @@ Authorization: CLIENT_TOKEN
         "marketPrice": 48.00,
         "offer": {
           "price": 45.00,
-          "reference": "ref_market_456",
           "delivery": "standard"
         },
         "exterior": "Field-Tested",
@@ -74,6 +74,7 @@ Authorization: CLIENT_TOKEN
 | Field | Description |
 |-------|-------------|
 | `id` | Pass back as `itemId` in the withdrawal request |
+| `itemId` | The parent catalog item, not the listing — pass it to [`GET /client/market/item`](/api-reference/client/get-item-listings) to see every listing of the same item. CS2 only. Never pass this as the withdrawal `itemId`; that is the `id` above. |
 | `offer.price` | Purchase cost in USD — pass this back as `items[].price` in the withdrawal request |
 | `offer.delivery` | `"standard"` (bot sources from supplier and sends a Steam trade offer) or `"instant"` (item already pre-positioned on the bot) |
 

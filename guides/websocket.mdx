@@ -85,7 +85,9 @@ socket.on('withdrawal', (data) => {
 
 ### Market Updates
 
-Fired when the instant-delivery market changes: an item becomes available, an existing item changes (typically its price), an item is no longer available, or the pool is rebuilt. This mirrors what `GET /secure/market?source=internal` returns, so you can keep a local copy of the market current without polling.
+Fired when the market changes: an item becomes available, an existing item changes (typically its price), an item is no longer available, or the market is rebuilt. This mirrors what `GET /secure/market` returns, so you can keep a local copy current without polling.
+
+Both CS2 (`730`) and Rust (`252490`) publish market updates on the same connection and the same envelope. Key your local state on `game` as well as `item.id`, and ignore events for games you don't offer.
 
 Market updates require an API key connection where the key has the `CORE_ACCESS` scope. Client token connections do not receive this event.
 
@@ -94,13 +96,13 @@ socket.on('market', (event) => {
   switch (event.type) {
     case 'upsert': // event.item became available
     case 'patch':  // event.item changed (usually price)
-      applyItem(event.item);
+      applyItem(event.game, event.item);
       break;
     case 'remove': // event.itemId is no longer available
-      removeItem(event.itemId);
+      removeItem(event.game, event.itemId);
       break;
-    case 'sync':   // pool rebuilt; discard local state and refetch
-      refetchMarket(); // GET /secure/market?source=internal
+    case 'sync':   // market rebuilt; discard local state for that game and refetch
+      refetchMarket(event.game); // GET /secure/market?game=<event.game>
       break;
   }
 });
@@ -108,20 +110,19 @@ socket.on('market', (event) => {
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `game` | number | App id: `730` for CS2 |
-| `source` | string | Market source, matching the `source` filter on `/secure/market`. Currently `"internal"` |
+| `game` | number | App id: `730` for CS2, `252490` for Rust |
+| `source` | string | Market lane. Always `"internal"` |
 | `type` | string | `"upsert"`, `"patch"`, `"remove"`, or `"sync"` |
 | `item` | object | Present on `upsert` and `patch`. The full item, same shape as `/secure/market` items, priced for your account |
 | `itemId` | string | Present on `remove`. The `id` of the item to drop |
 
 Notes on applying events:
 
-- `upsert` and `patch` both carry the full item. Apply either as an idempotent upsert keyed on `item.id`; the distinction only signals whether the item is new or changed.
+- `upsert` and `patch` both carry the full item. Apply either as an idempotent upsert keyed on `item.id`; the distinction only signals whether the item is new or changed. Not every game emits both, so never branch on which of the two you received.
 - A `remove` can arrive for an item you never saw. Ignore it in that case.
-- On `sync`, your local view may be arbitrarily stale. Refetch `GET /secure/market?source=internal` and rebuild from the response.
+- On `sync`, your local view for that `game` may be arbitrarily stale. Refetch `GET /secure/market?game=<game>` and rebuild from the response. A `sync` affects only the game it names; leave the other game's state alone.
+- A price change does not always arrive as a `patch`. Where an item's `id` is tied to the price it is offered at, the same change arrives as a `remove` of the old entry followed by an `upsert` of a new one. Apply events in the order received.
 - Prices are per merchant account, so the `offer.price` you receive already reflects your fee. Still validate the price at purchase time as described in [Market](/guides/market#keeping-prices-updated).
-
-Market updates currently cover CS2 items with source `internal`. Additional games and sources will reuse the same event and envelope.
 
 ## WebSocket vs Callbacks
 
