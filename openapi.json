@@ -500,8 +500,8 @@
                         "state": {
                           "type": "integer",
                           "minimum": 1,
-                          "maximum": 8,
-                          "description": "1=Normal, 2=CS2Banned, 3=RustBanned, 4=Banned, 5=InventoryPrivate, 6=TradeUrlInvalid, 7=UserNotFound, 8=UnknownError"
+                          "maximum": 10,
+                          "description": "1=Normal, 2=CS2Banned, 3=RustBanned, 4=Banned, 5=InventoryPrivate, 6=TradeUrlInvalid, 7=UserNotFound, 8=UnknownError, 9=UserNotTradeable, 10=SteamUnavailable"
                         },
                         "steamid": {
                           "type": "string",
@@ -530,6 +530,27 @@
                             "probation"
                           ],
                           "description": "Trade restriction details"
+                        },
+                        "bans": {
+                          "type": "object",
+                          "properties": {
+                            "vacBanned": {
+                              "type": "boolean"
+                            },
+                            "gameBans": {
+                              "type": "integer"
+                            },
+                            "economyBan": {
+                              "type": "string",
+                              "description": "Steam economy ban state: none, probation or banned"
+                            }
+                          },
+                          "required": [
+                            "vacBanned",
+                            "gameBans",
+                            "economyBan"
+                          ],
+                          "description": "Steam ban record. A VAC or game ban blocks CS2 deposits (state 2, USER_NOT_TRADEABLE on deposit); Rust is unaffected"
                         }
                       },
                       "required": [
