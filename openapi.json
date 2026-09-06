@@ -550,7 +550,7 @@
                             "gameBans",
                             "economyBan"
                           ],
-                          "description": "Steam ban record. A VAC or game ban blocks CS2 deposits (state 2, USER_NOT_TRADEABLE on deposit); Rust is unaffected"
+                          "description": "Steam ban record. A VAC ban blocks CS2 deposits (state 2, USER_NOT_TRADEABLE on deposit); game bans and Rust are unaffected"
                         }
                       },
                       "required": [

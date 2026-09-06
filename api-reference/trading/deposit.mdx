@@ -112,7 +112,7 @@ An "active" deposit is any not-yet-accepted trade (`initiated`, `pending` or `ac
 | 3 | `INVENTORY_FETCH_FAILED` | Couldn't load user's inventory |
 | 4 | `NO_OFFER_FOUND` | No valid offer for this item |
 | 6 | `TOO_MANY_ACTIVE_TRADES` | Client has 5+ active deposits (see Rate Limits) |
-| 7 | `USER_NOT_TRADEABLE` | User's Steam account can't trade. For CS2 this includes a VAC or game ban on record (Steam refuses to move the items, even though the inventory still lists them as tradable); the error `details` carry `vacBanned`, `gameBans` and `economyBan`. Rust deposits are not affected by VAC or game bans |
+| 7 | `USER_NOT_TRADEABLE` | User's Steam account can't trade. For CS2 this includes a VAC ban on record (Steam refuses to move the items, even though the inventory still lists them as tradable); the error `details` carry `vacBanned`, `gameBans` and `economyBan`. Game bans do not block trading, and Rust deposits are not affected by VAC bans |
 | 8 | `TOO_MANY_ITEMS` | Too many items in one request |
 | 9 | `ITEMS_UNAVAILABLE` | Items not found in inventory |
 | 10 | `ITEMS_NOT_ACCEPTED` | Items not accepted for deposit |

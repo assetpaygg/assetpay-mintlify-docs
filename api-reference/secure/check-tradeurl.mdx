@@ -57,7 +57,7 @@ api-key: YOUR_API_KEY
 | `reason.probation` | boolean | Whether the account is on probation |
 | `bans` | object | Steam ban record for the account (present when the URL resolves to a user) |
 | `bans.vacBanned` | boolean | VAC ban on record. Blocks CS2 deposits; Rust is unaffected |
-| `bans.gameBans` | number | Game bans on record. Blocks CS2 deposits; Rust is unaffected |
+| `bans.gameBans` | number | Game bans on record. Informational only; Steam still trades for these accounts |
 | `bans.economyBan` | string | Steam economy ban state: `none`, `probation` or `banned` |
 
 ### State Values
@@ -65,7 +65,7 @@ api-key: YOUR_API_KEY
 | Value | Name | Meaning |
 |-------|------|---------|
 | `1` | Normal | Trade URL is valid, full trading permissions |
-| `2` | CS2Banned | Can trade Rust items but not CS2 items. Also returned when `bans` shows a VAC or game ban: Steam refuses CS2 offers from such accounts even though the inventory still lists the items as tradable, and a CS2 deposit fails with `USER_NOT_TRADEABLE` |
+| `2` | CS2Banned | Can trade Rust items but not CS2 items. Also returned when `bans` shows a VAC ban: Steam refuses CS2 offers from such accounts even though the inventory still lists the items as tradable, and a CS2 deposit fails with `USER_NOT_TRADEABLE` |
 | `3` | RustBanned | Can trade CS2 items but not Rust items |
 | `4` | Banned | No trading permissions for any game |
 | `5` | InventoryPrivate | User's inventory is set to private |
