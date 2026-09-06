@@ -37,7 +37,7 @@ Authorization: CLIENT_TOKEN
 | `items[].price` | number | Yes | Offer price in USD. Must equal the current offer price returned by `/client/inventory`, validated server-side. |
 | `items[].amount` | number | No | Quantity for stackable Rust items (default: 1, max: 10000) |
 | `game` | string | No | `"730"` or `"252490"`. Defaults to `"730"`. |
-| `externalId` | string | No | Your unique tracking ID (max 128 chars). Must be unique per request; every trade of a split basket carries it (see Split baskets). |
+| `externalId` | string | No | Your unique tracking ID (max 128 chars). Must be unique per trade. |
 | `isInstant` | boolean | No | Request instant credit during the hold period (default `false`). Fails with `INSTANT_DEPOSITS_DISABLED` if instant deposits are off for your account. |
 
 ## Response
@@ -84,12 +84,6 @@ Authorization: CLIENT_TOKEN
 ```
 
 The response is a full [Trade](/reference/types#trade) object. After creation, the trade progresses through callbacks. See [Trade Lifecycle](/guides/trade-lifecycle).
-
-## Split baskets
-
-A single deposit request can become more than one trade. Items are routed by how we take them in (our own bots or a deposit partner), and each route is its own trade with its own Steam offer, status and webhooks. The response carries the primary trade (the highest-value split) at the top level and the others under `relatedTrades`.
-
-Every trade of the basket carries your `externalId`. Secondary trades also carry `splitOf` with the primary trade's id. Lookups and cancels by `externalId` resolve to the primary trade; address a secondary by its own `id`. Credit each trade on its own `completed` event: the totals are per trade, never per basket.
 
 ## Rate Limits
 

@@ -2200,12 +2200,7 @@
                           "description": "Trade origin: \"client\" (end-user flow) or \"self\" (merchant self-trade)"
                         },
                         "externalId": {
-                          "type": "string",
-                          "description": "The externalId you sent with the request. A deposit basket can split into several trades (one per route); every one of them carries it. Lookups by externalId resolve to the primary trade."
-                        },
-                        "splitOf": {
-                          "type": "string",
-                          "description": "Present on the secondary trades of a split deposit basket: the id of the primary trade, the one returned first from the deposit call and the one an externalId lookup resolves to."
+                          "type": "string"
                         },
                         "externalClientUserId": {
                           "type": "string"
@@ -3124,12 +3119,7 @@
                           "description": "Trade origin: \"client\" (end-user flow) or \"self\" (merchant self-trade)"
                         },
                         "externalId": {
-                          "type": "string",
-                          "description": "The externalId you sent with the request. A deposit basket can split into several trades (one per route); every one of them carries it. Lookups by externalId resolve to the primary trade."
-                        },
-                        "splitOf": {
-                          "type": "string",
-                          "description": "Present on the secondary trades of a split deposit basket: the id of the primary trade, the one returned first from the deposit call and the one an externalId lookup resolves to."
+                          "type": "string"
                         },
                         "externalClientUserId": {
                           "type": "string"
@@ -3993,12 +3983,7 @@
                           "description": "Trade origin: \"client\" (end-user flow) or \"self\" (merchant self-trade)"
                         },
                         "externalId": {
-                          "type": "string",
-                          "description": "The externalId you sent with the request. A deposit basket can split into several trades (one per route); every one of them carries it. Lookups by externalId resolve to the primary trade."
-                        },
-                        "splitOf": {
-                          "type": "string",
-                          "description": "Present on the secondary trades of a split deposit basket: the id of the primary trade, the one returned first from the deposit call and the one an externalId lookup resolves to."
+                          "type": "string"
                         },
                         "externalClientUserId": {
                           "type": "string"
@@ -7086,12 +7071,7 @@
                                 "description": "Trade origin: \"client\" (end-user flow) or \"self\" (merchant self-trade)"
                               },
                               "externalId": {
-                                "type": "string",
-                                "description": "The externalId you sent with the request. A deposit basket can split into several trades (one per route); every one of them carries it. Lookups by externalId resolve to the primary trade."
-                              },
-                              "splitOf": {
-                                "type": "string",
-                                "description": "Present on the secondary trades of a split deposit basket: the id of the primary trade, the one returned first from the deposit call and the one an externalId lookup resolves to."
+                                "type": "string"
                               },
                               "externalClientUserId": {
                                 "type": "string"
@@ -7829,12 +7809,7 @@
                               "description": "Trade origin: \"client\" (end-user flow) or \"self\" (merchant self-trade)"
                             },
                             "externalId": {
-                              "type": "string",
-                              "description": "The externalId you sent with the request. A deposit basket can split into several trades (one per route); every one of them carries it. Lookups by externalId resolve to the primary trade."
-                            },
-                            "splitOf": {
-                              "type": "string",
-                              "description": "Present on the secondary trades of a split deposit basket: the id of the primary trade, the one returned first from the deposit call and the one an externalId lookup resolves to."
+                              "type": "string"
                             },
                             "externalClientUserId": {
                               "type": "string"
@@ -8239,12 +8214,7 @@
                                 "description": "Trade origin: \"client\" (end-user flow) or \"self\" (merchant self-trade)"
                               },
                               "externalId": {
-                                "type": "string",
-                                "description": "The externalId you sent with the request. A deposit basket can split into several trades (one per route); every one of them carries it. Lookups by externalId resolve to the primary trade."
-                              },
-                              "splitOf": {
-                                "type": "string",
-                                "description": "Present on the secondary trades of a split deposit basket: the id of the primary trade, the one returned first from the deposit call and the one an externalId lookup resolves to."
+                                "type": "string"
                               },
                               "externalClientUserId": {
                                 "type": "string"
@@ -9731,12 +9701,7 @@
                                 "description": "Trade origin: \"client\" (end-user flow) or \"self\" (merchant self-trade)"
                               },
                               "externalId": {
-                                "type": "string",
-                                "description": "The externalId you sent with the request. A deposit basket can split into several trades (one per route); every one of them carries it. Lookups by externalId resolve to the primary trade."
-                              },
-                              "splitOf": {
-                                "type": "string",
-                                "description": "Present on the secondary trades of a split deposit basket: the id of the primary trade, the one returned first from the deposit call and the one an externalId lookup resolves to."
+                                "type": "string"
                               },
                               "externalClientUserId": {
                                 "type": "string"
@@ -12315,12 +12280,7 @@
                           "description": "Trade origin: \"client\" (end-user flow) or \"self\" (merchant self-trade)"
                         },
                         "externalId": {
-                          "type": "string",
-                          "description": "The externalId you sent with the request. A deposit basket can split into several trades (one per route); every one of them carries it. Lookups by externalId resolve to the primary trade."
-                        },
-                        "splitOf": {
-                          "type": "string",
-                          "description": "Present on the secondary trades of a split deposit basket: the id of the primary trade, the one returned first from the deposit call and the one an externalId lookup resolves to."
+                          "type": "string"
                         },
                         "externalClientUserId": {
                           "type": "string"
@@ -12708,12 +12668,7 @@
                                 "description": "Trade origin: \"client\" (end-user flow) or \"self\" (merchant self-trade)"
                               },
                               "externalId": {
-                                "type": "string",
-                                "description": "The externalId you sent with the request. A deposit basket can split into several trades (one per route); every one of them carries it. Lookups by externalId resolve to the primary trade."
-                              },
-                              "splitOf": {
-                                "type": "string",
-                                "description": "Present on the secondary trades of a split deposit basket: the id of the primary trade, the one returned first from the deposit call and the one an externalId lookup resolves to."
+                                "type": "string"
                               },
                               "externalClientUserId": {
                                 "type": "string"
@@ -13580,12 +13535,7 @@
                           "description": "Trade origin: \"client\" (end-user flow) or \"self\" (merchant self-trade)"
                         },
                         "externalId": {
-                          "type": "string",
-                          "description": "The externalId you sent with the request. A deposit basket can split into several trades (one per route); every one of them carries it. Lookups by externalId resolve to the primary trade."
-                        },
-                        "splitOf": {
-                          "type": "string",
-                          "description": "Present on the secondary trades of a split deposit basket: the id of the primary trade, the one returned first from the deposit call and the one an externalId lookup resolves to."
+                          "type": "string"
                         },
                         "externalClientUserId": {
                           "type": "string"
@@ -14378,12 +14328,7 @@
                           "description": "Trade origin: \"client\" (end-user flow) or \"self\" (merchant self-trade)"
                         },
                         "externalId": {
-                          "type": "string",
-                          "description": "The externalId you sent with the request. A deposit basket can split into several trades (one per route); every one of them carries it. Lookups by externalId resolve to the primary trade."
-                        },
-                        "splitOf": {
-                          "type": "string",
-                          "description": "Present on the secondary trades of a split deposit basket: the id of the primary trade, the one returned first from the deposit call and the one an externalId lookup resolves to."
+                          "type": "string"
                         },
                         "externalClientUserId": {
                           "type": "string"
