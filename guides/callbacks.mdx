@@ -154,7 +154,8 @@ The `event` you're handling is the new value of `trade.status`. AssetPay dispatc
 | `trade.status` | What to Do |
 |----------------|-----------|
 | `initiated` | Trade created, no Steam offer sent yet. Acknowledge with `200`. No balance action. |
-| `active` | Steam trade offer **sent to the user** — awaiting their acceptance. Acknowledge with `200`. |
+| `pending` | Steam trade offer created, awaiting the sending bot's confirmation. Usually followed by `active` within seconds and may be skipped. Acknowledge with `200`. |
+| `active` | Steam trade offer **sent to the user** — awaiting their acceptance (`offerID` now present). Acknowledge with `200`. |
 | `hold` | User accepted, items received, Steam hold started. Credit `preCredit` if using instant deposits; otherwise just acknowledge. |
 | `completed` | Hold ended cleanly (or no hold required for Rust). Credit `pendingCredit` (or `totalPrice` if not using instant deposits). |
 | `failed` | Trade did not go through. No credit needed. Optionally notify the user. |
@@ -286,12 +287,13 @@ Here's the sequence of callbacks you'd receive for a typical CS2 deposit:
 
 ```
 1. initiated  →  Trade created, offer about to be sent
-2. active     →  Steam trade offer sent to user (sitting in their inbox)
-3. hold       →  User accepted, items received, 7-day hold started (credit preCredit here)
-4. completed  →  Hold ended, no reversal (credit pendingCredit here)
+2. pending    →  Steam trade offer created, awaiting bot confirmation (often under a second)
+3. active     →  Steam trade offer sent to user (sitting in their inbox, offerID present)
+4. hold       →  User accepted, items received, 7-day hold started (credit preCredit here)
+5. completed  →  Hold ended, no reversal (credit pendingCredit here)
 ```
 
-If something goes wrong at any step, you'll get a `failed` callback instead of the next step. If the user declines the offer you'll get `declined`, and if it's auto-canceled after sitting unaccepted you'll get `canceled`. If the items are clawed back you'll get `reverted` — normally out of `hold`, while the 7-day window is still open, so reverse any `preCredit` you already applied. Rust deposits skip the `hold` step entirely and go straight from `active` to `completed`.
+`pending` is a progress signal only and can be skipped, so never gate logic on receiving it. If something goes wrong at any step, you'll get a `failed` callback instead of the next step. If the user declines the offer you'll get `declined`, and if it's auto-canceled after sitting unaccepted you'll get `canceled`. If the items are clawed back you'll get `reverted` — normally out of `hold`, while the 7-day window is still open, so reverse any `preCredit` you already applied. Rust deposits skip the `hold` step entirely and go straight from `active` to `completed`.
 
 ## Callback Example: Complete Withdrawal Flow
 

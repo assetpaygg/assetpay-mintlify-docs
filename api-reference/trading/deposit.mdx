@@ -101,7 +101,7 @@ The response is a full [Trade](/reference/types#trade) object. After creation, t
 | Concurrent active deposits | 5 | `TOO_MANY_ACTIVE_TRADES` (HTTP 429) |
 | Deposits initiated in any rolling 5-minute window | 10 | `RATE_LIMITED` (HTTP 429) |
 
-An "active" deposit is any not-yet-accepted trade (`initiated` or `active`). The per-client guard runs before pricing/inventory fetches, so rate-limited requests bail cheap.
+An "active" deposit is any not-yet-accepted trade (`initiated`, `pending` or `active`). The per-client guard runs before pricing/inventory fetches, so rate-limited requests bail cheap.
 
 ## Errors
 

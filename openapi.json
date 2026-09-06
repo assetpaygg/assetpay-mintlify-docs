@@ -2213,7 +2213,7 @@
                             "declined",
                             "reverted"
                           ],
-                          "description": "Trade status. In-flight: initiated, pending, active, hold. Terminal: completed, failed, canceled, declined, reverted. Deposit flow: initiated → active → hold → completed. Withdraw flow: initiated → pending → active → hold → completed."
+                          "description": "Trade status. In-flight: initiated, pending, active, hold. Terminal: completed, failed, canceled, declined, reverted. Deposit flow: initiated → pending (offer created, awaiting bot confirmation) → active (offer confirmed, offerID present) → hold → completed. Withdraw flow: initiated → pending → active → hold → completed."
                         },
                         "game": {
                           "type": "string"
@@ -3132,7 +3132,7 @@
                             "declined",
                             "reverted"
                           ],
-                          "description": "Trade status. In-flight: initiated, pending, active, hold. Terminal: completed, failed, canceled, declined, reverted. Deposit flow: initiated → active → hold → completed. Withdraw flow: initiated → pending → active → hold → completed."
+                          "description": "Trade status. In-flight: initiated, pending, active, hold. Terminal: completed, failed, canceled, declined, reverted. Deposit flow: initiated → pending (offer created, awaiting bot confirmation) → active (offer confirmed, offerID present) → hold → completed. Withdraw flow: initiated → pending → active → hold → completed."
                         },
                         "game": {
                           "type": "string"
@@ -3996,7 +3996,7 @@
                             "declined",
                             "reverted"
                           ],
-                          "description": "Trade status. In-flight: initiated, pending, active, hold. Terminal: completed, failed, canceled, declined, reverted. Deposit flow: initiated → active → hold → completed. Withdraw flow: initiated → pending → active → hold → completed."
+                          "description": "Trade status. In-flight: initiated, pending, active, hold. Terminal: completed, failed, canceled, declined, reverted. Deposit flow: initiated → pending (offer created, awaiting bot confirmation) → active (offer confirmed, offerID present) → hold → completed. Withdraw flow: initiated → pending → active → hold → completed."
                         },
                         "game": {
                           "type": "string"
@@ -7084,7 +7084,7 @@
                                   "declined",
                                   "reverted"
                                 ],
-                                "description": "Trade status. In-flight: initiated, pending, active, hold. Terminal: completed, failed, canceled, declined, reverted. Deposit flow: initiated → active → hold → completed. Withdraw flow: initiated → pending → active → hold → completed."
+                                "description": "Trade status. In-flight: initiated, pending, active, hold. Terminal: completed, failed, canceled, declined, reverted. Deposit flow: initiated → pending (offer created, awaiting bot confirmation) → active (offer confirmed, offerID present) → hold → completed. Withdraw flow: initiated → pending → active → hold → completed."
                               },
                               "game": {
                                 "type": "string"
@@ -7822,7 +7822,7 @@
                                 "declined",
                                 "reverted"
                               ],
-                              "description": "Trade status. In-flight: initiated, pending, active, hold. Terminal: completed, failed, canceled, declined, reverted. Deposit flow: initiated → active → hold → completed. Withdraw flow: initiated → pending → active → hold → completed."
+                              "description": "Trade status. In-flight: initiated, pending, active, hold. Terminal: completed, failed, canceled, declined, reverted. Deposit flow: initiated → pending (offer created, awaiting bot confirmation) → active (offer confirmed, offerID present) → hold → completed. Withdraw flow: initiated → pending → active → hold → completed."
                             },
                             "game": {
                               "type": "string"
@@ -8227,7 +8227,7 @@
                                   "declined",
                                   "reverted"
                                 ],
-                                "description": "Trade status. In-flight: initiated, pending, active, hold. Terminal: completed, failed, canceled, declined, reverted. Deposit flow: initiated → active → hold → completed. Withdraw flow: initiated → pending → active → hold → completed."
+                                "description": "Trade status. In-flight: initiated, pending, active, hold. Terminal: completed, failed, canceled, declined, reverted. Deposit flow: initiated → pending (offer created, awaiting bot confirmation) → active (offer confirmed, offerID present) → hold → completed. Withdraw flow: initiated → pending → active → hold → completed."
                               },
                               "game": {
                                 "type": "string"
@@ -9714,7 +9714,7 @@
                                   "declined",
                                   "reverted"
                                 ],
-                                "description": "Trade status. In-flight: initiated, pending, active, hold. Terminal: completed, failed, canceled, declined, reverted. Deposit flow: initiated → active → hold → completed. Withdraw flow: initiated → pending → active → hold → completed."
+                                "description": "Trade status. In-flight: initiated, pending, active, hold. Terminal: completed, failed, canceled, declined, reverted. Deposit flow: initiated → pending (offer created, awaiting bot confirmation) → active (offer confirmed, offerID present) → hold → completed. Withdraw flow: initiated → pending → active → hold → completed."
                               },
                               "game": {
                                 "type": "string"
@@ -12293,7 +12293,7 @@
                             "declined",
                             "reverted"
                           ],
-                          "description": "Trade status. In-flight: initiated, pending, active, hold. Terminal: completed, failed, canceled, declined, reverted. Deposit flow: initiated → active → hold → completed. Withdraw flow: initiated → pending → active → hold → completed."
+                          "description": "Trade status. In-flight: initiated, pending, active, hold. Terminal: completed, failed, canceled, declined, reverted. Deposit flow: initiated → pending (offer created, awaiting bot confirmation) → active (offer confirmed, offerID present) → hold → completed. Withdraw flow: initiated → pending → active → hold → completed."
                         },
                         "game": {
                           "type": "string"
@@ -12681,7 +12681,7 @@
                                   "declined",
                                   "reverted"
                                 ],
-                                "description": "Trade status. In-flight: initiated, pending, active, hold. Terminal: completed, failed, canceled, declined, reverted. Deposit flow: initiated → active → hold → completed. Withdraw flow: initiated → pending → active → hold → completed."
+                                "description": "Trade status. In-flight: initiated, pending, active, hold. Terminal: completed, failed, canceled, declined, reverted. Deposit flow: initiated → pending (offer created, awaiting bot confirmation) → active (offer confirmed, offerID present) → hold → completed. Withdraw flow: initiated → pending → active → hold → completed."
                               },
                               "game": {
                                 "type": "string"
@@ -13548,7 +13548,7 @@
                             "declined",
                             "reverted"
                           ],
-                          "description": "Trade status. In-flight: initiated, pending, active, hold. Terminal: completed, failed, canceled, declined, reverted. Deposit flow: initiated → active → hold → completed. Withdraw flow: initiated → pending → active → hold → completed."
+                          "description": "Trade status. In-flight: initiated, pending, active, hold. Terminal: completed, failed, canceled, declined, reverted. Deposit flow: initiated → pending (offer created, awaiting bot confirmation) → active (offer confirmed, offerID present) → hold → completed. Withdraw flow: initiated → pending → active → hold → completed."
                         },
                         "game": {
                           "type": "string"
@@ -14341,7 +14341,7 @@
                             "declined",
                             "reverted"
                           ],
-                          "description": "Trade status. In-flight: initiated, pending, active, hold. Terminal: completed, failed, canceled, declined, reverted. Deposit flow: initiated → active → hold → completed. Withdraw flow: initiated → pending → active → hold → completed."
+                          "description": "Trade status. In-flight: initiated, pending, active, hold. Terminal: completed, failed, canceled, declined, reverted. Deposit flow: initiated → pending (offer created, awaiting bot confirmation) → active (offer confirmed, offerID present) → hold → completed. Withdraw flow: initiated → pending → active → hold → completed."
                         },
                         "game": {
                           "type": "string"
