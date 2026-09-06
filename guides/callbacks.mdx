@@ -151,6 +151,8 @@ The `event` you're handling is the new value of `trade.status`. AssetPay dispatc
 
 ### Deposit Callbacks
 
+A deposit request can split into several trades, one per intake route, and each trade sends its own callbacks. Every trade of the basket carries your `externalId`; the secondary ones also carry `splitOf` with the primary trade id. Key your records on the trade `id`, and credit each trade on its own `completed`.
+
 | `trade.status` | What to Do |
 |----------------|-----------|
 | `initiated` | Trade created, no Steam offer sent yet. Acknowledge with `200`. No balance action. |
