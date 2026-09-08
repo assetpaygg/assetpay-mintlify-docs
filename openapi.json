@@ -838,7 +838,7 @@
     "/secure/prices": {
       "get": {
         "summary": "Get item prices and offers",
-        "description": "Returns the current price book for a given game. Each item carries a `deposit` price (what AssetPay pays for the item) and a `withdraw` price (fee-inclusive buy price you can pass straight back to /secure/buy). For CS2, `withdraw` is split into `standard` and `instant` delivery and each entry includes the Skinshark catalog `itemId`; for Rust, `withdraw` is a single value. Doppler items are returned as a single entry with a `phases[]` breakdown (per-phase deposit + standard withdraw); the top-level `deposit`/`withdraw` carry the floor as a default, and `withdraw.instant` is the any-phase instant price (instant delivery is not phase-specific). Withdraw prices already include your merchant fee. Requires API key with CORE_ACCESS scope.",
+        "description": "Returns the current price book for a given game. Each item carries a `deposit` price (what AssetPay pays for the item) and a `withdraw` price (fee-inclusive buy price you can pass straight back to /secure/buy). For CS2, `withdraw` is split into `standard` and `instant` delivery and each entry includes the Skinshark catalog `itemId`; for Rust, `withdraw` is a single value. Doppler items are returned as a single entry with a `phases[]` breakdown, each phase carrying a deposit price and its own `withdraw.standard`/`withdraw.instant` (a phase often has a standard floor and no instant one, in which case `withdraw.instant` is null); the top-level `deposit`/`withdraw` carry the floor as a default. Withdraw prices already include your merchant fee. Requires API key with CORE_ACCESS scope.",
         "tags": [
           "Trading"
         ],
@@ -952,11 +952,26 @@
                                       "description": "Deposit offer price in USD for this phase (what we pay)"
                                     },
                                     "withdraw": {
-                                      "type": [
-                                        "number",
-                                        "null"
+                                      "type": "object",
+                                      "properties": {
+                                        "standard": {
+                                          "type": [
+                                            "number",
+                                            "null"
+                                          ]
+                                        },
+                                        "instant": {
+                                          "type": [
+                                            "number",
+                                            "null"
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "standard",
+                                        "instant"
                                       ],
-                                      "description": "Fee-inclusive standard buy price in USD for this phase; null when unavailable. Instant delivery is not phase-specific - see the item's withdraw.instant."
+                                      "description": "Fee-inclusive buy price in USD for this phase, per delivery mode; either is null when unavailable. A phase often has a standard floor and no instant one."
                                     }
                                   },
                                   "required": [
