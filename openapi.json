@@ -3861,7 +3861,7 @@
     "/secure/buy/quick": {
       "post": {
         "summary": "Quick-buy skins from the marketplace (merchant self-trade)",
-        "description": "Buys the N cheapest listings of a single item at or below a per-unit ceiling. Available for CS2 and Rust. Identify the item with either `itemId` or its exact `marketHashName` (itemId wins when both are sent); the per-unit `maxPrice` (fee-inclusive, gross) and `itemId` come from /secure/prices. `amount` is 1-200 and `delivery` is standard or instant. Optionally pin a Doppler `phase` (e.g. 'Ruby') to buy only that phase, priced against the phase floor (not combinable with instant delivery); phase and instant delivery are CS2-only. The trade starts empty and locks the worst-case total; the filled listings (possibly fewer than requested) and the refund of any unfilled / below-ceiling remainder settle asynchronously via the trade webhook. Optional `autoCancel` (minutes, 30-720, default 30; 720 disables) cancels still-undelivered items automatically after the period, with refunds settling via the trade webhook. CS2 only.",
+        "description": "Buys the N cheapest listings of a single item at or below a per-unit ceiling. Available for CS2 and Rust. Identify the item with either `itemId` or its exact `marketHashName` (itemId wins when both are sent); the per-unit `maxPrice` (fee-inclusive, gross) and `itemId` come from /secure/prices. `amount` is 1-200 and `delivery` is standard or instant. Optionally pin a Doppler `phase` (e.g. 'Ruby') to buy only that phase, priced against the phase floor for the requested delivery mode; phase and instant delivery are CS2-only. The trade starts empty and locks the worst-case total; the filled listings (possibly fewer than requested) and the refund of any unfilled / below-ceiling remainder settle asynchronously via the trade webhook. Optional `autoCancel` (minutes, 30-720, default 30; 720 disables) cancels still-undelivered items automatically after the period, with refunds settling via the trade webhook. CS2 only.",
         "tags": [
           "Trading"
         ],
@@ -3918,7 +3918,7 @@
                       "Black Pearl",
                       "Emerald"
                     ],
-                    "description": "Doppler phase to buy (e.g. 'Ruby'). Priced against the phase floor. Cannot be combined with delivery 'instant'."
+                    "description": "Doppler phase to buy (e.g. 'Ruby'). Priced against the phase floor for the requested delivery mode."
                   },
                   "autoCancel": {
                     "type": "integer",
@@ -14211,7 +14211,7 @@
     "/client/trading/withdraw/quick": {
       "post": {
         "summary": "Initiate a quick skin withdrawal",
-        "description": "Buys the N cheapest listings of a single item at or below a per-unit ceiling, instead of naming specific listings. Available for CS2 and Rust. Identify the item with either `itemId` or its exact `marketHashName` (itemId wins when both are sent); the per-unit `maxPrice` (fee-inclusive, gross) and `itemId` come from /secure/prices. `amount` is the quantity (1-200) and `delivery` is standard or instant. Optionally pin a Doppler `phase` (e.g. 'Ruby') to buy only that phase, priced against the phase floor (not combinable with instant delivery); phase and instant delivery are CS2-only. The trade starts empty and locks the worst-case total; the filled listings (which may be fewer than requested) and the refund of any unfilled / below-ceiling remainder settle asynchronously via the trade webhook. Optional `autoCancel` (minutes, 30-720, default 30; 720 disables) cancels still-undelivered items automatically after the period, with refunds settling via the trade webhook. CS2 only.",
+        "description": "Buys the N cheapest listings of a single item at or below a per-unit ceiling, instead of naming specific listings. Available for CS2 and Rust. Identify the item with either `itemId` or its exact `marketHashName` (itemId wins when both are sent); the per-unit `maxPrice` (fee-inclusive, gross) and `itemId` come from /secure/prices. `amount` is the quantity (1-200) and `delivery` is standard or instant. Optionally pin a Doppler `phase` (e.g. 'Ruby') to buy only that phase, priced against the phase floor for the requested delivery mode; phase and instant delivery are CS2-only. The trade starts empty and locks the worst-case total; the filled listings (which may be fewer than requested) and the refund of any unfilled / below-ceiling remainder settle asynchronously via the trade webhook. Optional `autoCancel` (minutes, 30-720, default 30; 720 disables) cancels still-undelivered items automatically after the period, with refunds settling via the trade webhook. CS2 only.",
         "tags": [
           "Withdrawals"
         ],
@@ -14268,7 +14268,7 @@
                       "Black Pearl",
                       "Emerald"
                     ],
-                    "description": "Doppler phase to buy (e.g. 'Ruby'). Priced against the phase floor. Cannot be combined with delivery 'instant'."
+                    "description": "Doppler phase to buy (e.g. 'Ruby'). Priced against the phase floor for the requested delivery mode."
                   },
                   "autoCancel": {
                     "type": "integer",

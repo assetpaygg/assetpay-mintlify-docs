@@ -38,7 +38,7 @@ api-key: ap_...
 | `amount` | number | Yes | How many units to buy. Integer, 1–200. |
 | `externalIds` | array | No | One reference of your own per requested unit (each 1–128 chars), applied to the pre-filled rows in order. Must hold **exactly** `amount` entries. Accepted in place of the item id by both [cancel](/api-reference/secure/cancel-buy-item) endpoints. |
 | `delivery` | string | No | `"standard"` or `"instant"`. Defaults to `"standard"`. `"instant"` is CS2-only. |
-| `phase` | string | No | **CS2 only.** Doppler phase to buy: `"Phase 1"`–`"Phase 4"`, `"Ruby"`, `"Sapphire"`, `"Black Pearl"`, `"Emerald"`. Prices against that phase's floor. **Cannot be combined with `delivery: "instant"`** (rejected with `VALIDATION_FAILED`). |
+| `phase` | string | No | **CS2 only.** Doppler phase to buy: `"Phase 1"`–`"Phase 4"`, `"Ruby"`, `"Sapphire"`, `"Black Pearl"`, `"Emerald"`. Prices against that phase's floor for the requested delivery mode. Combines with `delivery: "instant"`, though many phases have no instant listing — check `phases[].withdraw.instant` on /secure/prices first. |
 | `game` | string | No | `"730"` (CS2) or `"252490"` (Rust). Defaults to `"730"`. |
 | `autoCancel` | number | No | **CS2 only.** Minutes after creation to automatically cancel any unit still undelivered. Integer, 30-720. Defaults to `30`; send `720` to disable. Rejected on Rust with `VALIDATION_FAILED`. See [Automatic cancellation](/guides/withdrawals#automatic-cancellation). |
 | `externalId` | string | No | Your unique tracking ID |
