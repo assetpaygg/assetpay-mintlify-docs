@@ -25,7 +25,7 @@ There are two authentication methods depending on the endpoint:
 
 ### API Key (Merchant endpoints)
 
-Used for `/auth/authenticate-client` and `/secure/*` endpoints. Pass your key in the `api-key` header:
+Used for `/auth/authenticate-client`, the `/secure/*` endpoints, and your wallet and ledger at `/v1/wallets/me/balance` and `/v1/ledger/*`. Each route needs a scope on the key, listed on its page. Pass your key in the `api-key` header:
 
 ```
 api-key: ap_your_key_here
@@ -105,6 +105,14 @@ Deposits additionally enforce a per-client guard: max 5 concurrent active deposi
 | `GET /secure/trades` | 3,000/min | 100/min |
 | `GET /secure/trades/:tradeId` | 3,000/min | 100/min |
 
+### Wallet and ledger endpoints
+
+| Endpoint | Verified | Unverified |
+|----------|----------|------------|
+| `GET /v1/wallets/me/balance` | 500/min | 50/min |
+| `GET /v1/ledger/transactions` | 100/5 min | 10/min |
+| `GET /v1/ledger/transactions/:transactionId` | 100/5 min | 10/min |
+
 When you hit a rate limit, you'll receive a `429` response with error code `1005` (`RATE_LIMITED`).
 
 ## Versioning
@@ -116,6 +124,13 @@ POST /auth/authenticate-client
 GET  /client/inventory
 POST /client/trading/deposit
 POST /secure/check-tradeurl
+```
+
+Wallet and ledger endpoints are versioned and must include the `/v1` prefix:
+
+```
+GET /v1/wallets/me/balance
+GET /v1/ledger/transactions
 ```
 
 ## Prices

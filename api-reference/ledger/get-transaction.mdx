@@ -1,0 +1,83 @@
+---
+title: "Get Wallet Transaction"
+description: "Fetch the full detail of one wallet funding, such as a crypto deposit or withdrawal, by the id returned from the transaction list."
+---
+
+Returns one funding owned by the merchant that holds the API key. A funding is a deposit, withdrawal, refund or internal transfer. Use the `id` from [`GET /v1/ledger/transactions`](/api-reference/ledger/list-transactions).
+
+**Authentication:** Merchant API Key (`api-key` header)
+**Scope:** `LEDGER_READ`
+
+<Note>
+Admin credits and debits appear in the transaction list but are not fundings. Their ids return `404 NOT_FOUND` here.
+</Note>
+
+## Request
+
+```http
+GET https://api.assetpay.gg/v1/ledger/transactions/5f0c2a4e-7b1d-4c39-9a8e-2d6f1b3c4e5a
+api-key: ap_...
+```
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `transactionId` | string | The funding `id` from the transaction list |
+
+## Response
+
+```json
+{
+  "requestId": "...",
+  "success": true,
+  "data": {
+    "id": "5f0c2a4e-7b1d-4c39-9a8e-2d6f1b3c4e5a",
+    "type": "WITHDRAWAL",
+    "status": "COMPLETED",
+    "amount": {
+      "usd": 500.00,
+      "crypto": "499.000000",
+      "token": "USDT",
+      "chain": "TRX",
+      "exchangeRate": "1"
+    },
+    "address": "TXYZ...",
+    "txnHash": "a1b2c3...",
+    "fee": 1.00,
+    "timestamps": {
+      "created": "2026-09-10T14:02:11.000Z",
+      "updated": "2026-09-10T14:20:45.000Z",
+      "completed": "2026-09-10T14:20:45.000Z",
+      "expired": null
+    }
+  }
+}
+```
+
+The fields are the same as a list item, plus two more:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `amount.exchangeRate` | string | USD per token at the time of the funding. `"0"` when no rate was recorded. |
+| `timestamps.expired` | string \| null | When an unpaid deposit expired, otherwise `null`. |
+
+See [List Wallet Transactions](/api-reference/ledger/list-transactions#response) for the rest.
+
+## Rate Limits
+
+| Merchant Status | Limit |
+|----------------|-------|
+| Verified | 100 requests / 5 min |
+| Unverified | 10 requests / min |
+
+## Errors
+
+| Code | Key | When |
+|------|-----|------|
+| 1003 | `NOT_FOUND` | No funding with this id belongs to your merchant account |
+| 1900 | `MISSING_API_KEY` | No `api-key` header was sent |
+| 1901 | `INVALID_API_KEY` | The key does not exist or was revoked |
+| 1904 | `API_KEY_IP_DENIED` | The request IP is not in the key's whitelist |
+| 1908 | `INSUFFICIENT_SCOPE` | The key does not have the `LEDGER_READ` scope |
+| 1005 | `RATE_LIMITED` | Rate limit exceeded |

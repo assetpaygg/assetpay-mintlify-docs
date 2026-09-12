@@ -127,6 +127,19 @@
               "api-reference/verification/status",
               "api-reference/verification/link"
             ]
+          },
+          {
+            "group": "Wallet",
+            "pages": [
+              "api-reference/wallet/get-balance"
+            ]
+          },
+          {
+            "group": "Ledger",
+            "pages": [
+              "api-reference/ledger/list-transactions",
+              "api-reference/ledger/get-transaction"
+            ]
           }
         ]
       }

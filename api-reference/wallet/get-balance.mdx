@@ -1,0 +1,63 @@
+---
+title: "Get Wallet Balance"
+description: "Read your merchant wallet in USD: what you can spend right now, what is pending, and what is held in escrow for skin deposits still in their hold period."
+---
+
+Returns the wallet balance of the merchant that owns the API key. Use it to check how much you can spend on withdrawals before calling [`/secure/buy`](/api-reference/secure/buy), or to reconcile your own books.
+
+**Authentication:** Merchant API Key (`api-key` header)
+**Scope:** `LEDGER_READ`
+
+<Note>
+Wallet and ledger routes carry the `/v1` prefix, unlike the version-neutral trading routes.
+</Note>
+
+## Request
+
+```http
+GET https://api.assetpay.gg/v1/wallets/me/balance
+api-key: ap_...
+```
+
+This endpoint takes no parameters.
+
+## Response
+
+```json
+{
+  "requestId": "...",
+  "success": true,
+  "data": {
+    "balance": 1250.40,
+    "pendingBalance": 85.00,
+    "escrowBalance": 312.75,
+    "currency": "USD"
+  }
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `balance` | number | Available balance in USD. This is what you can spend now. |
+| `pendingBalance` | number | Uncleared crypto deposits, plus funds locked for withdrawals that are still in flight. |
+| `escrowBalance` | number | Skin deposit value still in its hold period. It moves to `balance` when the hold ends. |
+| `currency` | string | Always `USD`. |
+
+The three buckets are separate. Your total wallet value is their sum.
+
+## Rate Limits
+
+| Merchant Status | Limit |
+|----------------|-------|
+| Verified | 500 requests / min |
+| Unverified | 50 requests / min |
+
+## Errors
+
+| Code | Key | When |
+|------|-----|------|
+| 1900 | `MISSING_API_KEY` | No `api-key` header was sent |
+| 1901 | `INVALID_API_KEY` | The key does not exist or was revoked |
+| 1904 | `API_KEY_IP_DENIED` | The request IP is not in the key's whitelist |
+| 1908 | `INSUFFICIENT_SCOPE` | The key does not have the `LEDGER_READ` scope |
+| 1005 | `RATE_LIMITED` | Rate limit exceeded |

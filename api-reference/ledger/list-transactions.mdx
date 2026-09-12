@@ -1,0 +1,128 @@
+---
+title: "List Wallet Transactions"
+description: "Page through your wallet funding history, newest first: crypto deposits, withdrawals, refunds, internal transfers and admin adjustments, filterable by type, status and date."
+---
+
+Returns the wallet funding history of the merchant that owns the API key, newest first. Use it to reconcile top-ups and payouts against your own records.
+
+**Authentication:** Merchant API Key (`api-key` header)
+**Scope:** `LEDGER_READ`
+
+What the list contains:
+
+- Fundings: deposits, withdrawals, refunds and internal transfers.
+- Admin credits and debits made to your wallet, as `ADMIN_CREDIT` and `ADMIN_DEBIT` rows.
+- Trade settlements are **not** included. Use [trade webhooks](/guides/callbacks) or [`GET /secure/trades`](/api-reference/secure/get-trades) for those.
+- `INITIATED` fundings older than 24 hours are hidden, since they were never paid.
+
+## Request
+
+```http
+GET https://api.assetpay.gg/v1/ledger/transactions?type=WITHDRAWAL&startDate=2026-09-01&limit=50&offset=0
+api-key: ap_...
+```
+
+### Query Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `type` | string | — | `DEPOSIT`, `WITHDRAWAL`, `REFUND` or `INTERNAL_TRANSFER`. Filtering by `DEPOSIT` or `WITHDRAWAL` also leaves out admin rows. |
+| `status` | string | — | `INITIATED`, `PENDING`, `PENDING_ADMIN`, `APPROVED`, `REJECTED`, `COMPLETED`, `FAILED`, `CANCELLED`, `REFUNDED` or `EXPIRED`. Applies to fundings only; admin rows are not filtered by it. |
+| `startDate` | string | — | ISO 8601 date or date-time. Only rows created at or after it. |
+| `endDate` | string | — | ISO 8601 date or date-time. Only rows created at or before it. |
+| `limit` | number | `50` | Rows per page, 1 to 100 |
+| `offset` | number | `0` | Rows to skip |
+
+## Response
+
+```json
+{
+  "requestId": "...",
+  "success": true,
+  "data": {
+    "items": [
+      {
+        "id": "5f0c2a4e-7b1d-4c39-9a8e-2d6f1b3c4e5a",
+        "type": "WITHDRAWAL",
+        "status": "COMPLETED",
+        "amount": {
+          "usd": 500.00,
+          "crypto": "499.000000",
+          "token": "USDT",
+          "chain": "TRX"
+        },
+        "fee": 1.00,
+        "address": "TXYZ...",
+        "txnHash": "a1b2c3...",
+        "timestamps": {
+          "created": "2026-09-10T14:02:11.000Z",
+          "completed": "2026-09-10T14:20:45.000Z",
+          "updated": "2026-09-10T14:20:45.000Z"
+        }
+      },
+      {
+        "id": "b7e1d9c2-3a4f-4e6b-8c1d-9f2a7e5b3c10",
+        "type": "ADMIN_CREDIT",
+        "status": "POSTED",
+        "amount": {
+          "usd": 25.00,
+          "crypto": "0",
+          "token": null,
+          "chain": null
+        },
+        "fee": 0,
+        "address": null,
+        "txnHash": null,
+        "timestamps": {
+          "created": "2026-09-08T09:30:00.000Z",
+          "completed": "2026-09-08T09:30:00.000Z",
+          "updated": "2026-09-08T09:30:00.000Z"
+        }
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 50,
+      "total": 2,
+      "totalPages": 1
+    }
+  }
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Funding id, or the ledger transaction id for admin rows. Only funding ids work with [Get Wallet Transaction](/api-reference/ledger/get-transaction). |
+| `type` | string | A funding type from the `type` filter, or `ADMIN_CREDIT` / `ADMIN_DEBIT` |
+| `status` | string | A funding status from the `status` filter. Admin rows are always `POSTED`. |
+| `amount.usd` | number | Amount in USD |
+| `amount.crypto` | string | Token amount with 6 decimals. `"0"` on admin rows. |
+| `amount.token` | string \| null | Token symbol, `null` on admin rows |
+| `amount.chain` | string \| null | Network, `null` on admin rows |
+| `fee` | number | Fee in USD |
+| `address` | string \| null | On-chain address the funding was sent to or from |
+| `txnHash` | string \| null | On-chain transaction hash, once known |
+| `timestamps.created` | string | When the row was created |
+| `timestamps.completed` | string \| null | When the funding completed |
+| `timestamps.updated` | string | Last change |
+| `pagination.page` | number | Current page, derived from `offset` and `limit` |
+| `pagination.total` | number | Rows matching the filters across all pages |
+
+## Rate Limits
+
+| Merchant Status | Limit |
+|----------------|-------|
+| Verified | 100 requests / 5 min |
+| Unverified | 10 requests / min |
+
+## Errors
+
+| Code | Key | When |
+|------|-----|------|
+| 1001 | `VALIDATION_FAILED` | A parameter is invalid: an unknown `type` or `status`, a date that does not parse, or `limit` out of range. HTTP 400, with an `error.fields` map. |
+| 1900 | `MISSING_API_KEY` | No `api-key` header was sent |
+| 1901 | `INVALID_API_KEY` | The key does not exist or was revoked |
+| 1904 | `API_KEY_IP_DENIED` | The request IP is not in the key's whitelist |
+| 1908 | `INSUFFICIENT_SCOPE` | The key does not have the `LEDGER_READ` scope |
+| 1005 | `RATE_LIMITED` | Rate limit exceeded |
+| 1006 | `SERVER_ERROR` | The history could not be loaded. Retry shortly. |
