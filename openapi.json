@@ -1336,6 +1336,28 @@
           },
           {
             "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "true",
+                    "false"
+                  ]
+                }
+              ],
+              "default": false,
+              "description": "Return only items accepted for deposit (offer.accepted = true)"
+            },
+            "required": false,
+            "description": "Return only items accepted for deposit (offer.accepted = true)",
+            "name": "acceptedOnly",
+            "in": "query"
+          },
+          {
+            "schema": {
               "type": "integer",
               "exclusiveMinimum": 0,
               "default": 730
@@ -8921,6 +8943,28 @@
             },
             "required": false,
             "name": "refresh",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "true",
+                    "false"
+                  ]
+                }
+              ],
+              "default": false,
+              "description": "Return only items accepted for deposit (offer.accepted = true)"
+            },
+            "required": false,
+            "description": "Return only items accepted for deposit (offer.accepted = true)",
+            "name": "acceptedOnly",
             "in": "query"
           },
           {
