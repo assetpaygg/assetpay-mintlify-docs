@@ -48,23 +48,28 @@ Authorization: CLIENT_TOKEN
 |-------|------|-------------|
 | `verificationLevel` | number | `0` = none, `1` = PictureID-verified |
 | `email` | string \| null | Email set during `/start`, used for linking |
-| `latestProcess` | object \| null | Most recent Signicat process, or null if never started |
+| `latestProcess` | object \| null | The `ACCEPTED` process if the client has one among its recent processes, otherwise the most recent process. Null if never started |
 | `linkedIdentity` | object \| null | Linked verified identity, or null if not yet verified |
+
+A client AssetPay has never seen returns `verificationLevel: 0` with `email`, `latestProcess` and `linkedIdentity` all `null`.
 
 ### Process Statuses
 
 | Status | Meaning |
 |--------|---------|
-| `CREATED` | Process created, capture URL generated |
-| `CAPTURE_PENDING` | User is in the capture flow |
-| `PROCESSING` | Document and selfie are being analyzed |
-| `ACCEPTED` | Verification successful — `verificationLevel` is now 1 |
-| `REJECTED` | Document or selfie failed validation |
+| `CREATED` | Process created, capture URL generated, no result yet. An abandoned process stays `CREATED` |
+| `ACCEPTED` | Verification successful: `verificationLevel` is now 1 |
+| `REJECTED` | Document or selfie failed validation, or the identity is banned |
 | `ERROR` | Something went wrong during processing |
-| `EXPIRED` | Not completed within 30 minutes |
+
+## Rate Limits
+
+30 requests per minute.
 
 ## Errors
 
 | Code | Key | When |
 |------|-----|------|
+| 1005 | `RATE_LIMITED` | More than 30 requests in a minute (HTTP 429) |
 | 1102 | `INVALID_TOKEN` | Client token is invalid or expired |
+| 1108 | `MISSING_BEARER` | The `Authorization` header is missing |

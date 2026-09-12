@@ -35,10 +35,10 @@ Authorization: CLIENT_TOKEN
 | `items` | array | Yes | Items to deposit (min 1, max 250) |
 | `items[].itemId` | string | Yes | Item ID from inventory (5–256 chars) |
 | `items[].price` | number | Yes | Offer price in USD. Must equal the current offer price returned by `/client/inventory`, validated server-side. |
-| `items[].amount` | number | No | Quantity for stackable Rust items (default: 1, max: 10000) |
-| `game` | string | No | `"730"` or `"252490"`. Defaults to `"730"`. |
+| `items[].amount` | number | No | Quantity to deposit from a stacked inventory row (integer, default: 1, max: 10000). Rust items and items routed to a deposit provider only accept `1`; a larger amount fails with `EXCEEDS_MAX_AMOUNT`. |
+| `game` | string | No | `"730"` (CS2) or `"252490"` (Rust). Defaults to `"730"`. |
 | `externalId` | string | No | Your unique tracking ID (max 128 chars). Must be unique per trade. |
-| `isInstant` | boolean | No | Request instant credit during the hold period (default `false`). Fails with `INSTANT_DEPOSITS_DISABLED` if instant deposits are off for your account. |
+| `isInstant` | boolean | No | **CS2 only.** Request instant credit during the hold period (default `false`). Fails with `INSTANT_DEPOSITS_DISABLED` if instant deposits are off for your account. Rust deposits are never split: they are credited in full when the trade reaches `completed`, whatever this field says. |
 
 ## Response
 
@@ -64,6 +64,7 @@ Authorization: CLIENT_TOKEN
         "marketHashName": "AK-47 | Redline (Field-Tested)",
         "type": "Rifle",
         "iconUrl": "IzMF03bk9WpSBq-S-ekoE33L-iLqGFHVaU25ZzQNQcXdA3g5gMEPvUZZEfSMJ6dESN8p_2SVTY7V2N4MxGVIwXpaL3_a3Hh...",
+        "assetId": "38291746502",
         "appid": 730,
         "tradable": true,
         "marketPrice": 12.50,
@@ -76,7 +77,10 @@ Authorization: CLIENT_TOKEN
       }
     ],
     "totalPrice": 10.75,
+    "preCredit": 8.60,
+    "pendingCredit": 2.15,
     "isInstant": true,
+    "collateral": { "merchant": 0, "provider": 150.00 },
     "createdAt": "2026-03-04T10:00:00.000Z",
     "updatedAt": "2026-03-04T10:00:00.000Z"
   }
@@ -84,6 +88,12 @@ Authorization: CLIENT_TOKEN
 ```
 
 The response is a full [Trade](/reference/types#trade) object. After creation, the trade progresses through callbacks. See [Trade Lifecycle](/guides/trade-lifecycle).
+
+`preCredit`, `pendingCredit` and `collateral` are already present on the creation response. For CS2, `preCredit` is what will be credited when the trade enters `hold` and `pendingCredit` the remainder. A Rust deposit has no `hold`: it carries `preCredit` equal to `totalPrice` and `pendingCredit` `0`, and the full amount is credited on `completed`. `collateral` appears only on this response and never on callbacks.
+
+### Split baskets
+
+A basket can be split into several trades internally, for example when some items are routed to a deposit provider and the rest go through AssetPay's own bots. Each trade gets its own Steam offer and its own callbacks. The response body is the largest trade (the primary), and the others ride along in `relatedTrades[]`, each a full Trade object. Only the primary carries your `externalId`. Instant credit is decided once for the whole basket and apportioned across the trades. If some of the trades fail to dispatch, the request still succeeds with the ones that went out; it only fails when none did.
 
 ## Rate Limits
 
@@ -108,20 +118,27 @@ An "active" deposit is any not-yet-accepted trade (`initiated`, `pending` or `ac
 | Code | Key | When |
 |------|-----|------|
 | 1 | `EXTERNAL_ID_EXISTS` | The `externalId` is already in use |
-| 2 | `MISSING_ITEMS` | Empty items array |
 | 3 | `INVENTORY_FETCH_FAILED` | Couldn't load user's inventory |
 | 4 | `NO_OFFER_FOUND` | No valid offer for this item |
+| 5 | `TRADE_OFFER_FAILED` | The Steam trade offer could not be sent (HTTP 502) |
 | 6 | `TOO_MANY_ACTIVE_TRADES` | Client has 5+ active deposits (see Rate Limits) |
-| 7 | `USER_NOT_TRADEABLE` | User's Steam account can't trade. For CS2 this includes a VAC ban on record (Steam refuses to move the items, even though the inventory still lists them as tradable); the error `details` carry `vacBanned`, `gameBans` and `economyBan`. Game bans do not block trading, and Rust deposits are not affected by VAC bans |
-| 8 | `TOO_MANY_ITEMS` | Too many items in one request |
-| 9 | `ITEMS_UNAVAILABLE` | Items not found in inventory |
-| 10 | `ITEMS_NOT_ACCEPTED` | Items not accepted for deposit |
+| 7 | `USER_NOT_TRADEABLE` | User's Steam account can't trade. This covers a Steam economy (trade) ban for any game and, for CS2, a VAC ban on record (Steam refuses to move the items, even though the inventory still lists them as tradable); the error `details` carry `vacBanned`, `gameBans` and `economyBan`. Game bans do not block trading, and Rust deposits are not affected by VAC bans |
+| 9 | `ITEMS_UNAVAILABLE` | Items not found in inventory, or no longer tradable |
 | 11 | `PRICE_CHANGED` | Offer price has changed since fetch |
-| 13 | `INVALID_TRADEURL` | User's trade URL is invalid |
+| 13 | `INVALID_TRADEURL` | Steam rejected the user's trade URL while loading their inventory |
+| 16 | `INVALID_LISTING_ID` | An `itemId` is not an inventory item id |
 | 17 | `INSUFFICIENT_ITEM_AMOUNT` | Requested amount exceeds available quantity |
-| 18 | `EXCEEDS_MAX_AMOUNT` | Requested amount exceeds the per-item maximum |
-| 19 | `DEPOSIT_IN_PROGRESS` | Another deposit is already processing for this user |
+| 18 | `EXCEEDS_MAX_AMOUNT` | Requested amount exceeds the per-item maximum, or `amount` is above `1` on a Rust item or a provider-routed item |
+| 19 | `DEPOSIT_IN_PROGRESS` | Another deposit is already processing for this user, or another deposit is claiming the same overstock-limited item. Retryable; the response carries `retry-after: 1` |
+| 29 | `ESCROW_NOT_ALLOWED` | Rust: the trade would be held in Steam escrow (the user has no Steam Guard Mobile Authenticator) |
+| 30 | `INVENTORY_PRIVATE` | The user's Steam inventory is private or could not be accessed |
+| 31 | `STEAM_UNAVAILABLE` | Steam is temporarily unable to serve the request; retry shortly (HTTP 424) |
+| 33 | `STEAM_RATE_LIMITED` | Steam is rate-limiting inventory requests; retry shortly (HTTP 424) |
+| 45 | `ITEM_OVERSTOCKED` | CS2: AssetPay already holds the maximum quantity of one or more items. `details.items[]` names each refused item as `{ itemId, marketHashName, remaining }`; refresh the inventory and retry without them |
+| 1001 | `VALIDATION_FAILED` | Invalid request body (HTTP 400), including an empty `items` array or more than 250 items. `error.fields` maps each invalid field to its reason |
 | 1005 | `RATE_LIMITED` | Client exceeded 10 deposits / 5 min (see Rate Limits) |
 | 1010 | `NO_BOTS_AVAILABLE` | No Steam bots online; retry shortly |
-| 1011 | `FLEET_DEGRADED` | Steam fleet degraded; retry shortly |
-| 1622 | `INSTANT_DEPOSITS_DISABLED` | Instant deposits are disabled for your account and the request set `isInstant: true` (omit the field or send `false`) |
+| 1011 | `FLEET_DEGRADED` | No trading bot has capacity right now (HTTP 503, `Retry-After: 30`); retry shortly |
+| 1014 | `DEPOSITS_PAUSED` | Deposits for this game are paused, or CS2 deposit pricing is temporarily unavailable (HTTP 503). Clears on its own |
+| 1310 | `USER_NOT_FOUND` | Steam could not find the user behind the trade URL |
+| 1622 | `INSTANT_DEPOSITS_DISABLED` | CS2: instant deposits are disabled for your account and the request set `isInstant: true` (omit the field or send `false`) |

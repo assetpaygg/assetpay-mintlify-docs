@@ -3,12 +3,12 @@ title: "Cancel Withdrawal"
 description: "Cancel every still-undelivered item in a withdrawal in one call; the response reports a per-item outcome and refunds settle asynchronously. CS2 items only."
 ---
 
-Requests cancellation of **every still-cancellable item** in a withdrawal, rather than one item at a time. Use it when a user abandons a whole order — a single call replaces a loop over [`POST /client/trading/withdraw/{tradeId}/items/{itemId}/cancel`](/api-reference/trading/cancel-withdraw-item).
+Requests cancellation of **every still-cancellable item** in a withdrawal, rather than one item at a time. Use it when a user abandons a whole order: a single call replaces a loop over [`POST /client/trading/withdraw/{tradeId}/items/{itemId}/cancel`](/api-reference/trading/cancel-withdraw-item).
 
 **Authentication:** Client Token (`Authorization` header)
 
 <Note>
-CS2 (Assetpay) items only. Rust withdrawals and internal-sourced items have no supplier cancel API. If **every** item in the trade is in one of those lanes the call fails with `TRADE_CANCEL_UNSUPPORTED` (44); if only some are, they are simply left out of the result.
+Only CS2 items bought from a marketplace can be cancelled. Rust withdrawals have no supplier cancel API, and items AssetPay fills from its own stock cannot be cancelled. If **every** item in the trade is one of those the call fails with `TRADE_CANCEL_UNSUPPORTED` (44); if only some are, they are simply left out of the result.
 </Note>
 
 ## Request
@@ -28,11 +28,11 @@ Authorization: CLIENT_TOKEN
 
 The supplier decides which items still qualify, so a **partial result is still a `200`**. Read the body, not the status code:
 
-- `requested` — how many items the supplier considered cancellable at all
-- `cancelled` / `failed` — how those split
-- `items[]` — one row per item the supplier reported on
+- `requested`: how many items the supplier considered cancellable at all
+- `cancelled` / `failed`: how those split
+- `items[]`: one row per item the supplier reported on
 
-Items the supplier never considered (already delivered, in Steam hold, Rust, internal-sourced) do not appear in `items[]` at all. An item must also be at least **30 minutes old** and not yet terminal; younger items come back as `failed` with `reason: "TRADE_CANCEL_TOO_SOON"`.
+Items the supplier never considered (already delivered, in Steam hold, Rust, filled from AssetPay's own stock) do not appear in `items[]` at all. A refused item comes back as `failed` with a `reason`: a stable-looking key reported by the supplier, for example `TRADE_CANCEL_TOO_SOON` for an item it considers too young to cancel. The exact value is not guaranteed.
 
 ## Response
 
@@ -60,12 +60,12 @@ Items the supplier never considered (already delivered, in Steam hold, Rust, int
 | `requested` | integer | Items the supplier considered cancellable. |
 | `cancelled` | integer | How many it accepted. |
 | `failed` | integer | How many it refused. |
-| `items[].itemId` | string | The item's AssetPay ID. |
+| `items[].itemId` | string | The item's AssetPay ID. If the marketplace reports an item AssetPay cannot match to one of the trade's rows, this is the marketplace's own item id instead. |
 | `items[].externalId` | string | Your own reference for the item, when you supplied one. Omitted otherwise. |
 | `items[].status` | string | `"cancelled"` or `"failed"`. |
-| `items[].reason` | string | Stable error key when the cancel was refused — e.g. `TRADE_CANCEL_TOO_SOON`, `TRADE_NOT_CANCELLABLE`. Omitted on success. |
+| `items[].reason` | string | The supplier's key for why the cancel was refused, for example `TRADE_CANCEL_TOO_SOON` or `TRADE_NOT_CANCELLABLE`. Passed through as reported, so not guaranteed to be one of these. Omitted on success. |
 
-A `cancelled` row only confirms the marketplace **accepted** the cancellation. AssetPay does **not** change item state inline — the refund and the transition to `canceled` arrive asynchronously through the standard `trade.*` [callback](/guides/callbacks). Poll `GET /client/trades/{id}` or rely on callbacks for the final state, and refund the user's balance when you receive the canceled callback.
+A `cancelled` row only confirms the marketplace **accepted** the cancellation. AssetPay does **not** change item state inline; the refund and the transition to `canceled` arrive asynchronously through the standard `trade.*` [callback](/guides/callbacks). Poll `GET /client/trades/{id}` or rely on callbacks for the final state, and refund the user's balance when you receive the canceled callback.
 
 <Note>
 A cancel lands on `canceled`, not `reverted`. `reverted` is for a delivered item that came back afterwards.
@@ -85,6 +85,6 @@ Shared across all clients of the same merchant.
 | Code | Key | When |
 |------|-----|------|
 | 28 | `TRADE_NOT_CANCELLABLE` | The trade is not a withdrawal, or the marketplace refused the request outright. |
-| 44 | `TRADE_CANCEL_UNSUPPORTED` | Every item in the trade is Rust or internal-sourced, so none can be cancelled. |
+| 44 | `TRADE_CANCEL_UNSUPPORTED` | Every item in the trade is Rust or was filled from AssetPay's own stock, so none can be cancelled. |
 | 1300 | `FORBIDDEN` | The trade does not belong to the authenticated user. |
 | 2201 | `ITEM_NOT_FOUND` | No trade matches that `tradeId` or `externalId`. |

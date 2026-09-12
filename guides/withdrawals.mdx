@@ -56,9 +56,10 @@ Authorization: CLIENT_TOKEN
 |-------|------|----------|-------------|
 | `items` | array | Yes | Array of items to withdraw (min 1, max 50) |
 | `items[].itemId` | string | Yes | Item ID from the market response |
-| `items[].price` | number | Yes | Purchase price in USD (max \$100,000). Validated against the current marketplace price. |
-| `items[].amount` | number | No | Quantity for stackable items (default: 1, max: 10000) |
-| `items[].externalId` | string | No | Your own reference for this single item (1–128 chars). Echoed back on the item and accepted in place of the item id when cancelling. |
+| `items[].price` | number | Yes | The price you quoted the user, in USD (max \$100,000). For Rust and CS2 items AssetPay fills from its own stock, a lower current price is accepted and charged; a higher one is rejected with `PRICE_CHANGED` unless it fits `maxPrice` or `slippageBps`. For CS2 items bought from a marketplace, `price` is the ceiling for the purchase. See [Price validation](/api-reference/trading/withdraw#price-validation). |
+| `items[].maxPrice` | number | No | The most you will pay for this item, in USD (max \$100,000). Overrides `slippageBps`. Not used for CS2 items bought from a marketplace. |
+| `items[].externalId` | string | No | Your own reference for this single item (1–128 chars), unique within the request. Echoed back on the item and accepted in place of the item id when cancelling. |
+| `slippageBps` | number | No | Upward price tolerance in basis points for items without `maxPrice` (integer, 0-2000, default `0`). Not used for CS2 items bought from a marketplace. |
 | `game` | string | No | `"730"` (CS2) or `"252490"` (Rust). Defaults to `"730"`. |
 | `autoCancel` | number | No | CS2 only. Minutes until undelivered items are cancelled automatically (30-720, default 30, `720` disables). See [Automatic cancellation](#automatic-cancellation). |
 | `externalId` | string | No | Your unique tracking ID (max 128 chars) |
@@ -84,8 +85,7 @@ Authorization: CLIENT_TOKEN
         "amount": 1,
         "status": "initiated",
         "offer": {
-          "price": 45.00,
-          "reference": "ref_market_789"
+          "price": 45.00
         }
       }
     ],
@@ -96,13 +96,13 @@ Authorization: CLIENT_TOKEN
 }
 ```
 
-On a freshly initiated withdraw the items only carry the data you submitted (`itemId`, `offer.price`) — Steam-side fields like `name`, `marketHashName`, `type`, and `iconUrl` are omitted until they resolve.
+On a freshly initiated withdraw the items only carry the data you submitted (`itemId`, `offer.price`); Steam-side fields like `name`, `marketHashName`, `type`, and `iconUrl` are omitted until they resolve.
 
 ## The `initiated` callback
 
 This is the most important callback in the entire system. When a user initiates a withdrawal, AssetPay does **not** start purchasing immediately. Instead, it sends an `initiated` callback to your backend and waits for your response.
 
-The approval callback uses the same `{ trade: ... }` body shape as every other state callback — see [Callbacks](/guides/callbacks#the-initiated-callback-for-withdrawals) for handling details and signature format.
+The approval callback uses the same `{ trade: ... }` body shape as every other state callback; see [Callbacks](/guides/callbacks#the-initiated-callback-for-withdrawals) for handling details and signature format.
 
 Your backend should:
 1. Verify the `X-AssetPay-Signature` header
@@ -134,10 +134,10 @@ The `reason` field is optional but useful for debugging. Any `4xx` status (400, 
 - `{ "errorCode": "INSUFFICIENT_BALANCE" }`
 - `{ "code": "INSUFFICIENT_BALANCE" }`
 
-All rejection paths mark the trade as `failed` and refund your merchant wallet automatically. You'll receive a follow-up `failed` callback.
+All rejection paths mark the trade as `failed` with trade-level `error: "MERCHANT_REJECTED"` and refund your merchant wallet automatically. You'll receive a follow-up `failed` callback.
 
 <Warning>
-`5xx` responses and timeouts are **not** treated as rejections. They are treated as delivery failures and retried with the standard webhook backoff. Make sure your rejection logic returns `4xx`, not `5xx`.
+`5xx` responses, timeouts, `408` and `429` are **not** treated as rejections. The approval callback is a fast gate, not a regular webhook: each attempt times out after 10 seconds, and it is tried 3 times in total (retries after 5 seconds, then 10 seconds). If all 3 attempts fail, or an attempt is cut short on AssetPay's side (which ends the gate without the remaining attempts), the trade goes to `failed` with trade-level `error: "APPROVAL_TIMEOUT"` and your merchant wallet is refunded. Make sure your rejection logic returns `4xx`, not `5xx`.
 </Warning>
 
 ## Balance Handling for Withdrawals
@@ -149,10 +149,10 @@ All rejection paths mark the trade as `failed` and refund your merchant wallet a
 | `active` | Steam trade offer sent to the user, awaiting acceptance. Acknowledge with `200`. No balance action. |
 | `hold` | Item sourced and the Steam trade offer accepted by the user, hold running (`offerID` + `holdEndDate` present). Acknowledge with `200`. |
 | `completed` | Delivery complete. No balance action needed. |
-| `failed` | Trade did not go through. Refund `totalPrice` if you previously deducted it. The failed item(s) carry an `error` code — see [Per-Item Failure Reasons](#per-item-failure-reasons). |
-| `declined` | The user declined / let the Steam offer expire (buyer fault). AssetPay auto-refunds your merchant wallet **minus a 2% penalty** (capped at $9). Decide your own user-facing refund — refund in full and absorb the 2%, or pass it on. |
+| `failed` | Trade did not go through. Refund `totalPrice` if you previously deducted it. The failed item(s) carry an `error` code; see [Per-Item Failure Reasons](#per-item-failure-reasons). |
+| `declined` | The user declined or let the Steam offer expire (buyer fault, CS2 only; a declined Rust offer ends as `failed`). Items AssetPay fills from its own stock are refunded in full. Items bought from a marketplace are refunded **minus the penalty the marketplace kept** for the decline. Decide your own user-facing refund: refund in full and absorb any penalty, or pass it on. |
 | `canceled` | Trade canceled before processing. Refund `totalPrice` if you previously deducted it. |
-| `reverted` | A completed withdrawal was reversed. Refund `totalPrice`. Check `revertedBy`. |
+| `reverted` | A delivered withdrawal was reversed. Check `revertedBy`: with `supplier` your merchant wallet is refunded once the supplier reports the refund, so refund `totalPrice`; with `user` (Steam rolled back the trade after the user accepted it), items bought from a marketplace are forfeited and your wallet is **not** refunded, while CS2 items AssetPay fills from its own stock are refunded in full. See [Trade Reversals](#trade-reversals). |
 
 A withdrawal progresses `initiated → pending → active → hold → completed`. The intermediate statuses (`pending`, `active`) are informational; drive your balance logic off `initiated` (deduct) and the terminal states (`completed` / `failed` / `declined` / `canceled` / `reverted`).
 
@@ -162,12 +162,12 @@ A withdrawal progresses `initiated → pending → active → hold → completed
 
 ### Trade Reversals
 
-In rare cases, a completed withdrawal can be reversed. This happens when either the supplier or the user cancels the Steam trade after acceptance. The trade object includes a `revertedBy` field:
+In rare cases, a delivered withdrawal is reversed after the user accepted the Steam offer, normally while it is still in `hold`. The trade object includes a `revertedBy` field:
 
-- `"supplier"` — the marketplace supplier reversed the trade
-- `"user"` — the user declined or cancelled the trade offer
+- `"supplier"`: the marketplace supplier reversed the trade
+- `"user"`: Steam rolled back the trade after the user accepted it. This is not a decline; a declined offer ends in `declined`.
 
-When a withdrawal is reverted, your merchant wallet is automatically refunded by AssetPay.
+When the supplier reverts a withdrawal, your merchant wallet is refunded automatically once the supplier reports the refund. When `revertedBy` is `"user"`, items bought from a marketplace are forfeited and your wallet is **not** refunded, while CS2 items AssetPay fills from its own stock are refunded in full.
 
 ## Quick Withdrawals
 
@@ -181,20 +181,20 @@ Authorization: CLIENT_TOKEN
 { "itemId": "dc3c4460d814ac35", "maxPrice": 67.39, "amount": 3, "delivery": "instant" }
 ```
 
-`maxPrice` is the **gross** per-unit ceiling (fee-inclusive — the same `withdraw` price returned by `/secure/prices`). It differs from the standard withdrawal in two ways:
+`maxPrice` is the **gross** per-unit ceiling (fee-inclusive, the same `withdraw` price returned by `/secure/prices`). It differs from the standard withdrawal in two ways:
 
-- **Pre-filled rows.** The response returns one item row per requested unit (same minimal shape as a normal buy — id, ceiling `price`, `delivery`), and `totalPrice` set to the worst-case lock (`amount × maxPrice`). Each row is bound to a real listing as fills arrive; the trade settles asynchronously — watch via callbacks or the WebSocket feed.
+- **Pre-filled rows.** The response returns one item row per requested unit (same minimal shape as a normal buy: id, ceiling `price`, `delivery`), and `totalPrice` set to the worst-case lock (`amount × maxPrice`). On Rust, rows for the same item are merged into one row whose `amount` is the number of units. Each row is bound to a real listing as fills arrive; the trade settles asynchronously, so watch via callbacks or the WebSocket feed.
 - **Partial fills are normal.** If fewer than `amount` listings are available at or below your ceiling, AssetPay buys what it can; the unfilled rows go to `failed`, the unfilled units and any below-ceiling savings are refunded to your balance, and `totalPrice` is trued up to the actual spend once settled.
 
-Everything else — the `initiated` approval callback, balance locking, per-item status — works exactly like the standard withdrawal. See the API reference for [`POST /client/trading/withdraw/quick`](/api-reference/trading/withdraw-quick) (and the merchant self-trade variant [`POST /secure/buy/quick`](/api-reference/secure/buy-quick)).
+Everything else (the `initiated` approval callback, balance locking, per-item status) works exactly like the standard withdrawal. See the API reference for [`POST /client/trading/withdraw/quick`](/api-reference/trading/withdraw-quick) (and the merchant self-trade variant [`POST /secure/buy/quick`](/api-reference/secure/buy-quick)).
 
-Because the rows are placeholders until they bind, they all share the catalog `itemId` and are hard to tell apart. Pass an `externalIds` array — one entry per requested unit, exactly `amount` of them, applied in order — to label them yourself; each row carries its `externalId` from creation, and cancelling accepts it in place of the item id.
+Because the rows are placeholders until they bind, they all share the catalog `itemId` and are hard to tell apart. Pass an `externalIds` array (one entry per requested unit, exactly `amount` of them, applied in order) to label them yourself; each row carries its `externalId` from creation, and cancelling accepts it in place of the item id. A merged Rust row carries no `externalId`.
 
 ## Tracking individual items
 
 Alongside the trade-level `externalId`, every item can carry one of its own. On a standard withdrawal set `items[].externalId`; on a quick withdrawal pass the `externalIds` array. Each is 1–128 characters.
 
-It comes back on the item in every trade response and callback, and both cancel endpoints accept it wherever an item id is expected — so you can cancel using your own reference without first mapping it to an AssetPay ID.
+It comes back on the item in every trade response and callback, and both cancel endpoints accept it wherever an item id is expected, so you can cancel using your own reference without first mapping it to an AssetPay ID.
 
 <Note>
 Stacked Rust rows stand for several items at once and carry no `externalId`.
@@ -202,7 +202,7 @@ Stacked Rust rows stand for several items at once and carry no `externalId`.
 
 ## Cancelling a Withdrawal
 
-A user can cancel a withdrawal that hasn't been delivered yet — for example when a CS2 purchase is taking too long to source. There are two endpoints, and which one you want depends on whether the user is abandoning one item or the whole order:
+A user can cancel a withdrawal that hasn't been delivered yet, for example when a CS2 purchase is taking too long to source. There are two endpoints, and which one you want depends on whether the user is abandoning one item or the whole order:
 
 | Call | Endpoint | Result |
 |------|----------|--------|
@@ -211,14 +211,14 @@ A user can cancel a withdrawal that hasn't been delivered yet — for example wh
 
 Both accept your own references in place of AssetPay IDs: the trade's `externalId` for `{tradeId}`, and an item's `externalId` for `{itemId}`.
 
-Cancellation is **CS2 (Assetpay) only**, and only for items AssetPay sourced itself — Rust withdrawals use a polling supplier with no cancel API, and internal-sourced items leave nothing to reverse upstream. Both come back as `TRADE_CANCEL_UNSUPPORTED` (44). An item can also only be cancelled when it is at least **30 minutes old** and not yet in a terminal state (`completed`, `failed`, `reverted`, `canceled`); otherwise you'll get `TRADE_CANCEL_TOO_SOON` (27) or `TRADE_NOT_CANCELLABLE` (28).
+Only **CS2 items bought from a marketplace** can be cancelled. Rust withdrawals use a polling supplier with no cancel API, and items AssetPay fills from its own stock cannot be cancelled. Both come back as `TRADE_CANCEL_UNSUPPORTED` (44). An item can also only be cancelled when it is at least **30 minutes old** and not yet in a terminal state (`completed`, `failed`, `declined`, `reverted`, `canceled`); otherwise you'll get `TRADE_CANCEL_TOO_SOON` (27, with `details.cancellableAt`) or `TRADE_NOT_CANCELLABLE` (28).
 
-The whole-order call is **best effort**, so a partial result is still a `200` — read the body rather than the status code. `requested` is how many items the supplier considered cancellable at all, `cancelled` and `failed` split those, and each entry in `items[]` carries a `status` plus a `reason` when it was refused. Items the supplier never considered — already delivered, in Steam hold, Rust, internal-sourced — simply don't appear.
+The whole-order call is **best effort**, so a partial result is still a `200`: read the body rather than the status code. `requested` is how many items the supplier considered cancellable at all, `cancelled` and `failed` split those, and each entry in `items[]` carries a `status` plus a `reason` when it was refused (a key reported by the supplier, not guaranteed). Items the supplier never considered (already delivered, in Steam hold, Rust, filled from AssetPay's own stock) simply don't appear.
 
-A successful response only confirms the marketplace accepted the cancel — AssetPay doesn't change the item state inline. Items transition to `canceled` and your merchant wallet is refunded asynchronously via the usual callback. Refund the user's balance when you receive that `canceled` callback. See the API reference for [one item](/api-reference/trading/cancel-withdraw-item) or [the whole order](/api-reference/trading/cancel-withdrawal).
+A successful response only confirms the marketplace accepted the cancel; AssetPay doesn't change the item state inline. Items transition to `canceled` and your merchant wallet is refunded asynchronously via the usual callback. Refund the user's balance when you receive that `canceled` callback. See the API reference for [one item](/api-reference/trading/cancel-withdraw-item) or [the whole order](/api-reference/trading/cancel-withdrawal).
 
 <Note>
-A cancel lands on `canceled`, not `reverted`. `reverted` means a delivered item came back afterwards (see [Trade Reversals](#trade-reversals)) — a different situation with the same refund shape.
+A cancel lands on `canceled`, not `reverted`. `reverted` means a delivered item came back afterwards (see [Trade Reversals](#trade-reversals)), which is a different situation.
 </Note>
 
 ## Automatic cancellation
@@ -267,10 +267,12 @@ When an item ends in `failed`, it carries an `error` field with a stable [`Trade
 | `error` | What happened | Suggested handling |
 |---------|---------------|--------------------|
 | `LISTING_UNAVAILABLE` | Listing sold / delisted / out of stock | Retry with another listing |
+| `NO_LISTING_AT_PRICE` | Nothing on sale at or below your ceiling | Re-quote higher or wait for restock |
 | `PRICE_CHANGED` | Price moved above your ceiling | Re-quote and retry |
 | `TRADE_URL_INVALID` | Recipient's Steam trade URL is invalid or escrow-blocked | Ask the user to fix their trade URL |
 | `STEAM_ACCOUNT_RESTRICTED` | Recipient's Steam can't receive (VAC / ban / hold / private) | User must resolve the Steam restriction |
+| `BUYER_TRADE_RESTRICTED` | The marketplace suspended this buyer (for example after repeated unaccepted offers), usually until a stated time | Wait for the suspension to lift |
 | `MARKET_UNAVAILABLE` | Temporary upstream / our-side issue | Retry later |
 | `PURCHASE_FAILED` | Unclassified failure | Reconcile, then retry or surface to the user |
 
-The **trade-level** `error` carries this code only when the whole withdrawal failed for one shared reason; for mixed outcomes it's `null`, so read the per-item `error` values. `canceled` and `declined` items carry no `error` — the status itself is the reason. The raw upstream detail is kept internal and never surfaced.
+The **trade-level** `error` is present only when the trade failed for one shared reason; otherwise it is omitted, so read the per-item `error` values. Besides the codes above it can be `MERCHANT_REJECTED` (you rejected the approval callback), `APPROVAL_TIMEOUT` (the approval callback never got an answer), `SERVICE_UNAVAILABLE` (a problem on AssetPay's side), or a `USER_*` code (`USER_TRADE_RESTRICTED`, `USER_INVENTORY_PRIVATE`, `USER_ESCROW`, `USER_NOT_FOUND`). `canceled` and `declined` items carry no `error`; the status itself is the reason. The raw upstream detail is kept internal and never surfaced.

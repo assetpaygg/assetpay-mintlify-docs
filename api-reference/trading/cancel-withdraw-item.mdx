@@ -8,7 +8,7 @@ Requests cancellation of a single undelivered withdrawal item. AssetPay asks the
 **Authentication:** Client Token (`Authorization` header)
 
 <Note>
-CS2 (Assetpay) items only. Rust withdrawals are fulfilled by a polling supplier with no cancel API, and internal-sourced items leave nothing to reverse upstream; both return `TRADE_CANCEL_UNSUPPORTED` (44).
+Only CS2 items bought from a marketplace can be cancelled. Rust withdrawals are fulfilled by a polling supplier with no cancel API, and items AssetPay fills from its own stock cannot be cancelled; both return `TRADE_CANCEL_UNSUPPORTED` (44).
 </Note>
 
 ## Request
@@ -23,16 +23,16 @@ Authorization: CLIENT_TOKEN
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `tradeId` | string | Yes | The withdrawal's internal ID, or the `externalId` you supplied at creation. |
-| `itemId` | string | Yes | The item's `id` within that trade, or the per-item `externalId` you supplied at withdraw time. 1–128 chars. |
+| `itemId` | string | Yes | The item's AssetPay ID within that trade, or the per-item `externalId` you supplied at withdraw time. If neither matches, the listing id shown as the item's `id` in trade payloads is also accepted, and it picks among the trade's items that are not yet terminal. |
 
 ## When an item can be cancelled
 
 A cancel is only accepted when **all** of the following hold:
 
 - The item belongs to a **withdrawal** trade owned by the authenticated user.
-- The item is a **CS2 (Assetpay)** item that was not sourced from the internal pool.
+- The item is a **CS2 item bought from a marketplace**, not one AssetPay filled from its own stock.
 - The item is **at least 30 minutes old** (measured from when it was created).
-- The item is **not** already in a terminal state (`completed`, `failed`, `reverted`, `canceled`).
+- The item is **not** already in a terminal state (`completed`, `failed`, `declined`, `reverted`, `canceled`).
 
 ## Response
 
@@ -49,9 +49,9 @@ A cancel is only accepted when **all** of the following hold:
 }
 ```
 
-`externalId` echoes your own per-item reference and is omitted when you did not supply one.
+`itemId` in the response is always the item's AssetPay ID, whichever reference you used in the path. `externalId` echoes your own per-item reference and is omitted when you did not supply one.
 
-A `200` only confirms the marketplace **accepted** the cancellation. AssetPay does **not** change the item state inline — the refund and the transition to `canceled` arrive asynchronously through the standard `trade.*` [callback](/guides/callbacks). Poll `GET /client/trades/{id}` or rely on callbacks for the final state, and refund the user's balance when you receive the canceled callback.
+A `200` only confirms the marketplace **accepted** the cancellation. AssetPay does **not** change the item state inline; the refund and the transition to `canceled` arrive asynchronously through the standard `trade.*` [callback](/guides/callbacks). Poll `GET /client/trades/{id}` or rely on callbacks for the final state, and refund the user's balance when you receive the canceled callback.
 
 <Note>
 A cancel lands on `canceled`, not `reverted`. `reverted` is for a delivered item that came back afterwards.
@@ -70,8 +70,8 @@ Shared across all clients of the same merchant.
 
 | Code | Key | When |
 |------|-----|------|
-| 27 | `TRADE_CANCEL_TOO_SOON` | The item is younger than 30 minutes. Retry after the 30-minute window. |
+| 27 | `TRADE_CANCEL_TOO_SOON` | The item is younger than 30 minutes. `details.cancellableAt` is the Unix time (seconds) from which the cancel will be accepted. |
 | 28 | `TRADE_NOT_CANCELLABLE` | Not cancellable: not a withdrawal, already in a terminal state, or the marketplace rejected the cancel. |
-| 44 | `TRADE_CANCEL_UNSUPPORTED` | The item is Rust or internal-sourced, so there is no supplier cancel to call. |
+| 44 | `TRADE_CANCEL_UNSUPPORTED` | The item is Rust or was filled from AssetPay's own stock, so there is no supplier cancel to call. |
 | 1300 | `FORBIDDEN` | The trade does not belong to the authenticated user. |
 | 2201 | `ITEM_NOT_FOUND` | No item matching that `itemId` or `externalId` exists under the given trade. |

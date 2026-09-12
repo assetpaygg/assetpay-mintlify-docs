@@ -3,7 +3,7 @@ title: "Quick Withdrawal"
 description: "Start a quick withdrawal: pass an itemId, a per-unit price ceiling and an amount, and AssetPay buys the cheapest listings at or below it. CS2 and Rust."
 ---
 
-Initiates a **quick** withdrawal. Instead of naming specific listings, you pass an `itemId`, a per-unit price ceiling, and an amount — AssetPay buys the cheapest available listings at or below your ceiling and delivers them to the user via Steam trade offer.
+Initiates a **quick** withdrawal. Instead of naming specific listings, you pass an `itemId`, a per-unit price ceiling, and an amount, and AssetPay buys the cheapest available listings at or below your ceiling and delivers them to the user via Steam trade offer.
 
 **Available for CS2 and Rust.** Other games are rejected with `QUICK_BUY_UNSUPPORTED_GAME` (32). For Rust, `phase` and `delivery: "instant"` are not available (CS2-only options).
 
@@ -31,11 +31,11 @@ Authorization: CLIENT_TOKEN
 |-----------|------|----------|-------------|
 | `itemId` | string | Yes\* | Item id from `/secure/prices` (CS2 catalog id, or any listing id of the item for Rust). 5–256 chars. Provide this **or** `marketHashName`; `itemId` wins when both are sent. |
 | `marketHashName` | string | Yes\* | Exact market hash name (e.g. `AK-47 \| Redline (Field-Tested)`), resolved to the item. Ignored when `itemId` is supplied. |
-| `maxPrice` | number | Yes | **Gross** per-unit price ceiling in USD (fee-inclusive — the same basis as the `withdraw` price in `/secure/prices`). Max \$100,000. AssetPay backs its fee out of this to get the sourcing ceiling sent to the marketplace. |
+| `maxPrice` | number | Yes | **Gross** per-unit price ceiling in USD (fee-inclusive, the same basis as the `withdraw` price in `/secure/prices`). Max \$100,000. AssetPay backs its fee out of this to get the sourcing ceiling sent to the marketplace. |
 | `amount` | number | Yes | How many units to buy. Integer, 1–200. |
-| `externalIds` | array | No | One reference of your own per requested unit (each 1–128 chars), applied to the pre-filled rows in order. Must hold **exactly** `amount` entries. Accepted in place of the item id by both [cancel](/api-reference/trading/cancel-withdraw-item) endpoints. |
-| `delivery` | string | No | `"standard"` or `"instant"`. Defaults to `"standard"`. `"instant"` is CS2-only. |
-| `phase` | string | No | **CS2 only.** Doppler phase to buy: `"Phase 1"`–`"Phase 4"`, `"Ruby"`, `"Sapphire"`, `"Black Pearl"`, `"Emerald"`. Prices against that phase's floor for the requested delivery mode. Combines with `delivery: "instant"`, though many phases have no instant listing — check `phases[].withdraw.instant` on /secure/prices first. |
+| `externalIds` | array | No | One reference of your own per requested unit (each 1–128 chars), applied to the pre-filled rows in order. Must hold **exactly** `amount` entries, all unique. Accepted in place of the item id by both [cancel](/api-reference/trading/cancel-withdraw-item) endpoints. On Rust the rows are merged into one (see [Response](#response)), which carries no `externalId`. |
+| `delivery` | string | No | `"standard"` or `"instant"`. Defaults to `"standard"`. `"instant"` is CS2-only. When instant quick withdrawals are switched off server-side, an `"instant"` request is accepted and quietly placed as `"standard"`; the rows then carry `delivery: "standard"`. |
+| `phase` | string | No | **CS2 only.** Doppler phase to buy: `"Phase 1"`–`"Phase 4"`, `"Ruby"`, `"Sapphire"`, `"Black Pearl"`, `"Emerald"`. Prices against that phase's floor for the requested delivery mode. Combines with `delivery: "instant"`, though many phases have no instant listing, so check `phases[].withdraw.instant` on /secure/prices first. |
 | `game` | string | No | `"730"` (CS2) or `"252490"` (Rust). Defaults to `"730"`. |
 | `autoCancel` | number | No | **CS2 only.** Minutes after creation to automatically cancel any unit still undelivered. Integer, 30-720. Defaults to `30`; send `720` to disable. Rejected on Rust with `VALIDATION_FAILED`. See [Automatic cancellation](/guides/withdrawals#automatic-cancellation). |
 | `externalId` | string | No | Your unique tracking ID (max 128 chars). Must be unique per trade. |
@@ -73,20 +73,20 @@ Authorization: CLIENT_TOKEN
 
 The response is a full [Trade](/reference/types#trade) object. Unlike the deterministic [`/client/trading/withdraw`](/api-reference/trading/withdraw), the actual filled listings are **not known yet** at creation, so:
 
-- `items` contains **one pre-filled row per requested unit** (so `amount: 3` returns 3 rows), each carrying the ceiling `price` and `delivery` — the same minimal shape as a standard buy item. The catalog `itemId` is used as each row's placeholder `id` until it is **bound** to a real listing.
+- `items` contains **one pre-filled row per requested unit** (so `amount: 3` returns 3 rows), each carrying the ceiling `price` and `delivery`, the same minimal shape as a standard buy item. The catalog `itemId` is used as each row's placeholder `id` until it is **bound** to a real listing. On Rust, rows for the same item are merged, so you get a single row whose `amount` is the number of units, with no `externalId`.
 - `totalPrice` is the **worst-case lock** (`amount × maxPrice`, after rounding), not the final spend.
 
-As the order fills, each row is bound to a real listing — its `id` becomes the listing id and its price updates to the actual fill — and the trade settles asynchronously. For CS2 the fills arrive from the marketplace over time; for Rust the cheapest units at or below your ceiling are selected in one pass right after approval. Fills may be **fewer than requested** if supply runs out at your ceiling; those unfilled rows go to `failed`, and the unfilled units plus any below-ceiling savings are refunded. Poll `GET /client/trades/{id}` or rely on callbacks / the WebSocket feed for the final view. Once settled, `totalPrice` reflects the **actual** amount spent on the filled items.
+As the order fills, each row is bound to a real listing (its `id` becomes the listing id and its price updates to the actual fill) and the trade settles asynchronously. For CS2 the fills arrive from the marketplace over time; for Rust the cheapest units at or below your ceiling are selected in one pass right after approval. Fills may be **fewer than requested** if supply runs out at your ceiling; those unfilled rows go to `failed`, and the unfilled units plus any below-ceiling savings are refunded. Poll `GET /client/trades/{id}` or rely on callbacks / the WebSocket feed for the final view. Once settled, `totalPrice` reflects the **actual** amount spent on the filled items.
 
 ## How it works
 
-1. **Lock** — the worst-case total (`amount × maxPrice`) is locked from your merchant balance up front.
-2. **Approval** — an `initiated` callback fires to your backend before anything is purchased (same as the standard withdraw). Approve with `2xx`, reject with `4xx`.
-3. **Fill** — AssetPay buys the cheapest `amount` listings at or below the sourcing ceiling. Partial fills are normal.
-4. **Settle** — filled items settle (sourcing + your fee); the unfilled remainder and below-ceiling savings are refunded to your balance.
+1. **Lock**: the worst-case total (`amount × maxPrice`) is locked from your merchant balance up front.
+2. **Approval**: an `initiated` callback fires to your backend before anything is purchased (same as the standard withdraw). Approve with `2xx`, reject with `4xx`.
+3. **Fill**: AssetPay buys the cheapest `amount` listings at or below the sourcing ceiling. Partial fills are normal.
+4. **Settle**: filled items settle (sourcing + your fee); the unfilled remainder and below-ceiling savings are refunded to your balance.
 
 <Warning>
-Quick withdrawals require your merchant account to have an active callback URL configured. Calling this endpoint without one immediately fails with `MERCHANT_NO_CALLBACK_URL` (1705).
+Quick withdrawals require your merchant account to have an active callback URL and an API secret configured. Calling this endpoint without them fails immediately and no trade is created: `MERCHANT_NO_CALLBACK_URL` (1705), `MERCHANT_CALLBACK_URL_DISABLED` (1706) or `MERCHANT_NO_API_SECRET` (1707).
 </Warning>
 
 ## Rate Limits
@@ -105,10 +105,12 @@ Shared across all clients of the same merchant.
 | 1 | `EXTERNAL_ID_EXISTS` | The `externalId` is already in use |
 | 32 | `QUICK_BUY_UNSUPPORTED_GAME` | `game` is not CS2 (`"730"`) or Rust (`"252490"`) |
 | 12 | `MERCHANT_BALANCE_LOW` | Your merchant balance can't cover the worst-case lock |
-| 13 | `INVALID_TRADEURL` | User's trade URL is invalid |
 | 14 | `LISTING_NOT_FOUND` | Rust: the `itemId` / `marketHashName` doesn't match any current listing |
-| 20 | `WITHDRAW_IN_PROGRESS` | Another withdrawal is already processing for this user |
+| 20 | `WITHDRAW_IN_PROGRESS` | Another withdrawal is already processing for this user. Retryable; the response carries `retry-after: 1` |
 | 42 | `INSUFFICIENT_STOCK` | Rust: no units currently sourceable at or below `maxPrice` |
-| 1001 | `VALIDATION_FAILED` | `amount` out of range (1–200), `maxPrice` ≤ 0, `phase` / instant delivery on Rust, or other invalid input |
+| 1001 | `VALIDATION_FAILED` | Invalid request body (HTTP 400): `amount` out of range (1–200), `maxPrice` ≤ 0, neither `itemId` nor `marketHashName`, `externalIds` not exactly `amount` unique entries, `phase` / instant delivery / `autoCancel` on Rust, or other invalid input. `error.fields` maps each invalid field to its reason |
+| 1015 | `WITHDRAWALS_PAUSED` | Withdrawals for this game are temporarily paused (HTTP 503) |
 | 1601 | `INVALID_AMOUNT` | The derived sourcing ceiling or lock total was zero or negative |
 | 1705 | `MERCHANT_NO_CALLBACK_URL` | Merchant has no active callback URL configured |
+| 1706 | `MERCHANT_CALLBACK_URL_DISABLED` | The callback URL was auto-disabled after repeated delivery failures; re-save it to re-enable |
+| 1707 | `MERCHANT_NO_API_SECRET` | Merchant has no active API secret, so the approval callback cannot be signed |

@@ -19,15 +19,15 @@ api-key: ap_...
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `game` | string | `730` | `"730"` (CS2) or `"252490"` (Rust) |
-| `search` | string | — | Search by item name (max 100 chars) |
-| `sort` | string | — | `relevance`, `priceAsc`, `priceDesc`, `nameAsc`, or `nameDesc` |
-| `minPrice` | number | — | Minimum price filter (USD) |
-| `maxPrice` | number | — | Maximum price filter (USD) |
+| `game` | integer | `730` | `730` (CS2) or `252490` (Rust). Any value other than `252490` returns CS2 |
+| `search` | string | - | Search by item name (max 100 chars) |
+| `sort` | string | - | `relevance`, `priceAsc`, `priceDesc`, `nameAsc`, or `nameDesc` |
+| `minPrice` | number | - | Minimum price filter (USD, `0` or more) |
+| `maxPrice` | number | - | Maximum price filter (USD, `0` or more) |
 | `page` | number | `1` | Page number |
-| `perPage` | number | `50` | Items per page (min 1, max 1000) |
-| `source` | string | — | Set to `internal` to restrict results to the AssetPay pool, or `external` to restrict them to third-party marketplace listings (refreshed every 5 minutes). Omit for both. Ignored when `development` is set. |
-| `development` | boolean | `false` | Sandbox flag. When `true` (or `1`), every returned item is stamped with instant delivery, a placeholder `previewToken`, and a synthetic holding `botInfo` so you can build against the full item shape using cheap live listings. The `source` filter is ignored. |
+| `perPage` | number | `50` | Items per page (1–1000), or `-1` to return every matching item |
+| `source` | string | - | CS2 only. Set to `internal` to restrict results to the AssetPay pool, or `external` to restrict them to third-party marketplace listings (refreshed every 5 minutes). Omit for both. Ignored when `development` is set. |
+| `development` | boolean | `false` | Sandbox flag. When `true` (or `1`), every returned item is stamped with instant delivery, a random `assetId`, a placeholder `previewToken`, and a synthetic holding `botInfo` so you can build against the full item shape using cheap real listings. Third-party listings are limited to instant-delivery rows, and the `source` filter is ignored. |
 
 ## Response
 
@@ -44,7 +44,9 @@ api-key: ap_...
 
 See [`GET /client/market`](/api-reference/client/get-market#response) for the full field list and the [`Item`](/reference/types#item) type.
 
-Items sourced from the AssetPay internal pool (self-owned, instant delivery) additionally carry `previewToken` (Steam inspect/preview token) and `botInfo` (the holding bot). Third-party marketplace listings expose an inspect link upstream and have no `previewToken`.
+CS2 rows also carry `itemId`, the parent catalog id. Pass it to [`GET /secure/market/item`](/api-reference/secure/get-item-listings) to list that item's individual listings.
+
+Items sourced from the AssetPay internal pool (self-owned, instant delivery) additionally carry `botInfo` (the holding bot). `previewToken` (Steam inspect/preview token) is present on pool items, and on third-party marketplace listings when the marketplace provides one.
 
 To keep results current without polling, subscribe to the WebSocket [Market Updates](/guides/websocket#market-updates) event. It pushes `internal`-source item and price changes in the same item shape, priced for your account.
 
@@ -54,3 +56,11 @@ To keep results current without polling, subscribe to the WebSocket [Market Upda
 |----------------|-------|
 | Verified | 3,000 requests / min |
 | Unverified | 100 requests / min |
+
+## Errors
+
+| Code | Key | When |
+|------|-----|------|
+| 1001 | `VALIDATION_FAILED` | Invalid query parameter, e.g. an unknown `sort` value (HTTP 400, details in `error.fields`) |
+| 1005 | `RATE_LIMITED` | Rate limit exceeded (HTTP 429) |
+| 1007 | `SYSTEM_MAINTENANCE` | Service is in maintenance mode (HTTP 503) |

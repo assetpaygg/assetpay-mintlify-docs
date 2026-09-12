@@ -26,10 +26,10 @@ api-key: ap_...
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `type` | string | — | `DEPOSIT`, `WITHDRAWAL`, `REFUND` or `INTERNAL_TRANSFER`. Filtering by `DEPOSIT` or `WITHDRAWAL` also leaves out admin rows. |
-| `status` | string | — | `INITIATED`, `PENDING`, `PENDING_ADMIN`, `APPROVED`, `REJECTED`, `COMPLETED`, `FAILED`, `CANCELLED`, `REFUNDED` or `EXPIRED`. Applies to fundings only; admin rows are not filtered by it. |
-| `startDate` | string | — | ISO 8601 date or date-time. Only rows created at or after it. |
-| `endDate` | string | — | ISO 8601 date or date-time. Only rows created at or before it. |
+| `type` | string | - | `DEPOSIT`, `WITHDRAWAL`, `REFUND` or `INTERNAL_TRANSFER`. Filtering by `DEPOSIT` or `WITHDRAWAL` also leaves out admin rows; `REFUND` and `INTERNAL_TRANSFER` still return them. |
+| `status` | string | - | `INITIATED`, `PENDING`, `PENDING_ADMIN`, `APPROVED`, `REJECTED`, `COMPLETED`, `FAILED`, `CANCELLED`, `REFUNDED` or `EXPIRED`. Applies to fundings only; admin rows are not filtered by it. |
+| `startDate` | string | - | ISO 8601 date or date-time. Only rows created at or after it. |
+| `endDate` | string | - | ISO 8601 date or date-time. Only rows created at or before it. A date-only value means midnight UTC at the start of that day, so pass a date-time to include the day itself. |
 | `limit` | number | `50` | Rows per page, 1 to 100 |
 | `offset` | number | `0` | Rows to skip |
 
@@ -120,9 +120,11 @@ api-key: ap_...
 | Code | Key | When |
 |------|-----|------|
 | 1001 | `VALIDATION_FAILED` | A parameter is invalid: an unknown `type` or `status`, a date that does not parse, or `limit` out of range. HTTP 400, with an `error.fields` map. |
-| 1900 | `MISSING_API_KEY` | No `api-key` header was sent |
+| 1100 | `UNAUTHORIZED` | Neither an `api-key` header nor a `Bearer` `Authorization` header was sent (HTTP 401) |
+| 1300 | `MERCHANT_API_KEY_REQUIRED` | An admin API key was used; this route needs a merchant key (HTTP 403) |
+| 1301 | `ACCOUNT_DISABLED` | The account that owns the API key is not active (HTTP 403) |
 | 1901 | `INVALID_API_KEY` | The key does not exist or was revoked |
 | 1904 | `API_KEY_IP_DENIED` | The request IP is not in the key's whitelist |
 | 1908 | `INSUFFICIENT_SCOPE` | The key does not have the `LEDGER_READ` scope |
 | 1005 | `RATE_LIMITED` | Rate limit exceeded |
-| 1006 | `SERVER_ERROR` | The history could not be loaded. Retry shortly. |
+| 1006 | `SERVER_ERROR` | The history could not be loaded. Sent with HTTP 400. Retry shortly. |

@@ -40,7 +40,7 @@ This endpoint takes no parameters.
 |-------|------|-------------|
 | `balance` | number | Available balance in USD. This is what you can spend now. |
 | `pendingBalance` | number | Uncleared crypto deposits, plus funds locked for withdrawals that are still in flight. |
-| `escrowBalance` | number | Skin deposit value still in its hold period. It moves to `balance` when the hold ends. |
+| `escrowBalance` | number | The part of CS2 skin deposits that was not credited instantly, while those deposits are in hold. It moves to `balance` when a deposit completes; if the deposit fails or is reverted it is taken back and never reaches you. Rust deposits never use escrow. |
 | `currency` | string | Always `USD`. |
 
 The three buckets are separate. Your total wallet value is their sum.
@@ -56,7 +56,9 @@ The three buckets are separate. Your total wallet value is their sum.
 
 | Code | Key | When |
 |------|-----|------|
-| 1900 | `MISSING_API_KEY` | No `api-key` header was sent |
+| 1100 | `UNAUTHORIZED` | Neither an `api-key` header nor a `Bearer` `Authorization` header was sent (HTTP 401) |
+| 1300 | `MERCHANT_API_KEY_REQUIRED` | An admin API key was used; this route needs a merchant key (HTTP 403) |
+| 1301 | `ACCOUNT_DISABLED` | The account that owns the API key is not active (HTTP 403) |
 | 1901 | `INVALID_API_KEY` | The key does not exist or was revoked |
 | 1904 | `API_KEY_IP_DENIED` | The request IP is not in the key's whitelist |
 | 1908 | `INSUFFICIENT_SCOPE` | The key does not have the `LEDGER_READ` scope |

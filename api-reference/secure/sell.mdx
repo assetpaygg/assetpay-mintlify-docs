@@ -3,7 +3,7 @@ title: "Sell Items (Self-Trade)"
 description: "Merchant-side deposit: AssetPay receives the skins by Steam trade offer and credits the merchant wallet, the server-to-server equivalent of a client deposit."
 ---
 
-Merchant-facing equivalent of [`POST /client/trading/deposit`](/api-reference/trading/deposit). Initiates a deposit trade where AssetPay receives the skins via Steam trade offer and credits the merchant's USD wallet. There is no end-user — the trade URL is supplied per-request.
+Merchant-facing equivalent of [`POST /client/trading/deposit`](/api-reference/trading/deposit). Initiates a deposit trade where AssetPay receives the skins via Steam trade offer and credits the merchant's USD wallet. There is no end-user: the trade URL is supplied per-request.
 
 **Authentication:** Merchant API Key (`api-key` header)
 **Scope:** `CORE_ACCESS`
@@ -34,14 +34,14 @@ api-key: ap_...
 | `items` | array | Yes | Items to sell (min 1, max 250) |
 | `items[].itemId` | string | Yes | Item ID from `/secure/inventory` |
 | `items[].price` | number | Yes | Offer price in USD. Must match the current offer price. |
-| `items[].amount` | number | No | Quantity for stackable Rust items (default `1`) |
+| `items[].amount` | number | No | Quantity to sell from the item (integer, default `1`, max `10000`). Rust currently accepts only `1` per item; more fails with `EXCEEDS_MAX_AMOUNT` (18) |
 | `game` | string | No | `"730"` or `"252490"`. Defaults to `"730"`. |
-| `externalId` | string | No | Your unique tracking ID |
-| `isInstant` | boolean | No | Request instant credit (default `false`). Fails with `INSTANT_DEPOSITS_DISABLED` if instant deposits are off for your account. |
+| `externalId` | string | No | Your unique tracking ID (max 128 chars) |
+| `isInstant` | boolean | No | Request instant credit (default `false`). CS2 only: fails with `INSTANT_DEPOSITS_DISABLED` if instant deposits are off for your account. Rust is always credited up front, so the flag is not checked there. |
 
 ## Response
 
-Returns a full [`Trade`](/reference/types#trade) object with `source: "self"`. Self-trades are always treated as fully trusted — `preCredit` equals `totalPrice` and there is no collateral.
+Returns a full [`Trade`](/reference/types#trade) object with `source: "self"`. Self-trades skip risk evaluation and carry no collateral. `preCredit` equals `totalPrice` when `isInstant` is `true` or the game is Rust. Otherwise `preCredit` is `0` and `pendingCredit` equals `totalPrice` until the trade completes.
 
 ```json
 {
@@ -69,10 +69,12 @@ Returns a full [`Trade`](/reference/types#trade) object with `source: "self"`. S
 }
 ```
 
+A basket can be split into several trades, one Steam trade offer each. The response is then the primary trade, with the others in `relatedTrades` (each a full `Trade`). Your `externalId` is set on the primary trade only.
+
 ## Differences from `/client/trading/deposit`
 
-- Risk evaluation is **skipped** — merchant self-trades are fully trusted, so `preCredit` always equals `totalPrice` and `pendingCredit` is `0`.
-- The per-client active/rolling deposit guard does **not** run on this route — only the per-merchant tier throttle limits self-trades.
+- Risk evaluation is **skipped** and there is no collateral. Instant credit still follows `isInstant` on CS2: without it, the whole `totalPrice` stays in `pendingCredit`.
+- The per-client active/rolling deposit guard does **not** run on this route. Only the per-merchant tier throttle limits self-trades.
 - The trade is persisted with `source: "self"`, and the API response carries that field so you can distinguish self-trades from client trades.
 - Webhooks still fire on every state change.
 
@@ -85,4 +87,16 @@ Returns a full [`Trade`](/reference/types#trade) object with `source: "self"`. S
 
 ## Errors
 
-Same set as [`POST /client/trading/deposit`](/api-reference/trading/deposit#errors) minus `TOO_MANY_ACTIVE_TRADES` (per-client guard never runs). `RATE_LIMITED` (1005) can still fire if the merchant-tier limits above are exceeded. `INVALID_TRADEURL` (13) is common if the supplied `tradeUrl` is malformed.
+Same set as [`POST /client/trading/deposit`](/api-reference/trading/deposit#errors) minus `TOO_MANY_ACTIVE_TRADES` (per-client guard never runs). `RATE_LIMITED` (1005) can still fire if the merchant-tier limits above are exceeded. A malformed `tradeUrl` fails with `VALIDATION_FAILED` (1001); `INVALID_TRADEURL` (13) means Steam rejected a well-formed one. Codes worth handling explicitly:
+
+| Code | Key | When |
+|------|-----|------|
+| 7 | `USER_NOT_TRADEABLE` | The account can't trade. When a Steam ban is the cause, `error.details` carries `vacBanned`, `gameBans` and `economyBan` |
+| 18 | `EXCEEDS_MAX_AMOUNT` | `amount` is above what the item allows (anything above `1` on Rust) |
+| 19 | `DEPOSIT_IN_PROGRESS` | Another deposit for the same Steam account, or another claim on the same overstock-limited item, is still in flight. Retryable: sent with `retry-after: 1` |
+| 29 | `ESCROW_NOT_ALLOWED` | The trade would be held in Steam escrow (checked up front on Rust) |
+| 45 | `ITEM_OVERSTOCKED` | We already hold the maximum of an item. `error.details.items[]` lists each refused item as `{ itemId, marketHashName, remaining }` |
+| 1001 | `VALIDATION_FAILED` | The body failed validation, including a malformed `tradeUrl`. HTTP 400, see `error.fields` |
+| 1010 | `NO_BOTS_AVAILABLE` | No Steam bot could take the trade offer. The trade is marked failed; retry shortly |
+| 1011 | `FLEET_DEGRADED` | No Steam trade bot is available. HTTP 503 with `Retry-After: 30` |
+| 1014 | `DEPOSITS_PAUSED` | Deposits for this game are temporarily paused |

@@ -3,7 +3,7 @@ title: "Get Inventory (Self-Trade)"
 description: "Fetch any Steam account's inventory straight from its trade URL, authenticated by the merchant API key alone with no separate client-authentication step."
 ---
 
-Returns the Steam inventory for the account identified by the supplied `tradeUrl`. There is no client-authentication step on this path — the merchant API key authenticates the call, and the Steam account is derived per-request from the trade URL.
+Returns the Steam inventory for the account identified by the supplied `tradeUrl`. There is no client-authentication step on this path: the merchant API key authenticates the call, and the Steam account is derived per-request from the trade URL.
 
 **Authentication:** Merchant API Key (`api-key` header)
 **Scope:** `CORE_ACCESS`
@@ -20,12 +20,13 @@ api-key: ap_...
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `tradeUrl` | string | Required | The Steam trade URL of the account whose inventory you want |
-| `game` | string | `730` | `"730"` (CS2) or `"252490"` (Rust) |
-| `refresh` | boolean | `false` | Force-refresh upstream cache |
-| `search` | string | — | Filter by item name (max 100 chars) |
-| `sort` | string | — | `relevance`, `priceAsc`, `priceDesc`, `nameAsc`, or `nameDesc` |
-| `minPrice` | number | — | Minimum offer price in USD |
-| `maxPrice` | number | — | Maximum offer price in USD |
+| `game` | integer | `730` | `730` (CS2) or `252490` (Rust) |
+| `refresh` | boolean | `false` | Force-refresh upstream cache. Only `true` or `false` |
+| `acceptedOnly` | boolean | `false` | Return only items with `offer.accepted: true`. Applied before pagination, so `count` reflects it. Only `true` or `false` |
+| `search` | string | - | Filter by item name |
+| `sort` | string | - | `relevance`, `priceAsc`, `priceDesc`, `nameAsc`, or `nameDesc`. Any other value is ignored |
+| `minPrice` | number | - | Minimum offer price in USD |
+| `maxPrice` | number | - | Maximum offer price in USD |
 | `page` | number | `1` | Page number |
 | `limit` | number | `50` | Items per page (use `-1` to disable pagination) |
 
@@ -51,8 +52,7 @@ Same shape as [`GET /client/inventory`](/api-reference/client/get-inventory). Ea
           "accepted": true
         },
         "exterior": "Field-Tested",
-        "wear": "0.25432",
-        "stickers": []
+        "wear": "0.25432"
       }
     ],
     "count": 47,
@@ -62,7 +62,7 @@ Same shape as [`GET /client/inventory`](/api-reference/client/get-inventory). Ea
 }
 ```
 
-`collateral` is always `0` for self-trade callers — instant credit isn't applicable when the merchant is trading with itself. See the [Instant Credit guide](/guides/instant-credit) for the client-flow behavior.
+`collateral` is always `0` for self-trade callers: instant credit isn't applicable when the merchant is trading with itself. See the [Instant Credit guide](/guides/instant-credit) for the client-flow behavior.
 
 ## Rate Limits
 
@@ -75,10 +75,14 @@ Same shape as [`GET /client/inventory`](/api-reference/client/get-inventory). Ea
 
 | Code | Key | When |
 |------|-----|------|
-| 3 | `INVENTORY_FETCH_FAILED` | Couldn't load the Steam inventory (private or banned) |
-| 7 | `USER_NOT_TRADEABLE` | Steam returned 403 — inventory private or account can't trade |
-| 13 | `INVALID_TRADEURL` | The supplied `tradeUrl` is malformed |
+| 3 | `INVENTORY_FETCH_FAILED` | Couldn't load the Steam inventory |
+| 7 | `USER_NOT_TRADEABLE` | Steam reports the account can't trade |
+| 13 | `INVALID_TRADEURL` | Steam rejected the supplied `tradeUrl`. A malformed URL fails with `VALIDATION_FAILED` instead |
+| 29 | `ESCROW_NOT_ALLOWED` | Steam reports that trades with the account would be held in escrow |
+| 30 | `INVENTORY_PRIVATE` | The Steam inventory is private or could not be accessed |
 | 31 | `STEAM_UNAVAILABLE` | Steam temporarily couldn't serve the request; retry shortly |
 | 33 | `STEAM_RATE_LIMITED` | Steam is rate-limiting inventory reads; retry shortly |
-| 1010 | `NO_BOTS_AVAILABLE` | No Steam bots online; retry shortly |
-| 1011 | `FLEET_DEGRADED` | Steam fleet degraded; retry shortly |
+| 1001 | `VALIDATION_FAILED` | A query parameter failed validation, including a malformed `tradeUrl`. HTTP 400, see `error.fields` |
+| 1011 | `FLEET_DEGRADED` | Steam fleet degraded. HTTP 503 with `Retry-After: 30` |
+| 1014 | `DEPOSITS_PAUSED` | Deposits for this game are temporarily paused, so there is nothing to quote |
+| 1310 | `USER_NOT_FOUND` | No Steam user behind the supplied `tradeUrl` |

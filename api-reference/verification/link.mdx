@@ -3,7 +3,7 @@ title: "Link Verified Identity"
 description: "Link the authenticated client to an existing verified identity by email address, so one document scan covers all of a user's multiple Steam accounts at once."
 ---
 
-Links the authenticated client to an existing verified identity by matching the email set on the client record. Use this when a user has multiple Steam accounts — one document scan covers all of them.
+Links the authenticated client to an existing verified identity by matching the email set on the client record. Use this when a user has multiple Steam accounts: one document scan covers all of them.
 
 **Authentication:** Client Token (`Authorization` header)
 
@@ -23,7 +23,7 @@ Authorization: CLIENT_TOKEN
 - The identity must not be banned.
 - The identity must not have reached its maximum linked account limit (default 10).
 
-On success, the client's `verificationLevel` is immediately set to `1`.
+On success, the client's `verificationLevel` is immediately set to `1`. Rate limit: 5 requests per 10 minutes.
 
 ## Response
 
@@ -39,16 +39,17 @@ On success, the client's `verificationLevel` is immediately set to `1`.
 
 ## Trust Cascade
 
-Linking is also a security mechanism. If any linked account triggers a deposit reversal, the trust factor is destroyed on **every** account tied to the same identity. This is by design — it's what makes raising instant credit caps safe.
+Linking is also a security mechanism. If any linked account has a CS2 deposit reversed, the trust factor is destroyed on **every** account tied to the same identity. This is by design: it's what makes raising instant credit caps safe.
 
 ## Errors
 
 | Code | Key | When |
 |------|-----|------|
-| 2301 | `VERIFICATION_ALREADY_VERIFIED` | Client is already at level 1 |
-| 2103 | `CLIENT_USER_NOT_FOUND` | No `ClientUser` record exists for this Steam ID yet |
-| 2305 | `VERIFICATION_ACCOUNT_CAP_REACHED` | Identity has reached its max-linked-accounts limit |
-| 2306 | `VERIFICATION_ALREADY_LINKED` | Client is already linked to an identity |
-| 2310 | `VERIFICATION_EMAIL_REQUIRED` | No email on the client — pass one in `/start` first |
-| 2312 | `VERIFICATION_LINK_FAILED` | No verified identity matches the email, or the matched identity is banned |
+| 2301 | `VERIFICATION_ALREADY_VERIFIED` | Client is already at level 1 (HTTP 400) |
+| 2103 | `CLIENT_USER_NOT_FOUND` | No `ClientUser` record exists for this Steam ID yet (HTTP 404) |
+| 2305 | `VERIFICATION_ACCOUNT_CAP_REACHED` | Identity has reached its max-linked-accounts limit (HTTP 400) |
+| 2310 | `VERIFICATION_EMAIL_REQUIRED` | No email on the client; pass one in `/start` first (HTTP 400) |
+| 2312 | `VERIFICATION_LINK_FAILED` | No verified identity matches the email, or the matched identity is banned (HTTP 400) |
+| 1005 | `RATE_LIMITED` | More than 5 requests in 10 minutes (HTTP 429) |
 | 1102 | `INVALID_TOKEN` | Client token is invalid or expired |
+| 1108 | `MISSING_BEARER` | The `Authorization` header is missing |

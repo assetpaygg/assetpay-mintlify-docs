@@ -10,7 +10,7 @@ The AssetPay **price feed** is a low-latency stream of item and price changes, d
 Each consumer reads a **snapshot** of current state once, then **tails the stream** for incremental changes. If you fall behind or reconnect, you re-read the snapshot and resume - no events are lost.
 
 <Note>
-The feed requires separately provisioned credentials. If you only need your own priced view of the market (the same items `/secure/market?source=internal` returns, with your fee applied), the WebSocket [Market Updates](/guides/websocket#market-updates) event covers that with just your API key.
+The feed requires separately provisioned credentials. If you only need your own priced view of the market (the CS2 pool items `/secure/market?source=internal` returns, priced for your account), the WebSocket [Market Updates](/guides/websocket#market-updates) event covers that with just your API key.
 </Note>
 
 ## Connection
@@ -59,33 +59,47 @@ A new item entered the pool (or its block was refreshed):
   "id": "0f9c...",
   "appid": 730,
   "assetId": "39482...",
-  "name": "AK-47 | Redline (Field-Tested)",
-  "marketHashName": "AK-47 | Redline (Field-Tested)",
-  "iconUrl": "https://...",
+  "classId": "310776...",
+  "instanceId": "480085...",
+  "status": "available",
   "tradable": true,
   "delivery": "instant",
-  "price": "12.43",
-  "updatedAt": "2026-06-15T12:00:00.000Z"
+  "name": "AK-47 | Redline (Field-Tested)",
+  "marketHashName": "AK-47 | Redline (Field-Tested)",
+  "type": "Rifle",
+  "iconUrl": "https://...",
+  "previewToken": "...",
+  "exterior": "Field-Tested",
+  "wear": "0.25432",
+  "paintSeed": 123,
+  "botInfo": { "name": "...", "steamId": "7656...", "joined": "2025-01-10T00:00:00.000Z" },
+  "prices": {
+    "<your_lane>": { "price": "12.43", "updatedAt": "2026-06-15T12:00:00.000Z" }
+  }
 }
 ```
+
+`id`, `appid`, `assetId`, `status`, `tradable`, `delivery` and `prices` are always present. `prices` is keyed by marketplace, each entry `{ price, updatedAt }`, and holds every marketplace the item is priced on in your stream. Every other field, including `rarity`, `color`, `phase`, `amount`, `stickers` and `charm`, is omitted when it has no value. The snapshot hash stores the same block.
 
 ### `price.update`
 
 An existing item's price changed:
 
 ```json
-{ "id": "0f9c...", "price": "12.10", "updatedAt": "2026-06-15T12:05:00.000Z" }
+{ "id": "0f9c...", "marketplace": "<your_lane>", "price": "12.10", "updatedAt": "2026-06-15T12:05:00.000Z" }
 ```
 
 ### `item.remove`
 
-An item left the pool (sold or pulled):
+An item left the pool (sold or pulled), or is no longer priced on your stream:
 
 ```json
 { "id": "0f9c..." }
 ```
 
-Payloads may carry additional internal routing fields. Read the fields you need and ignore the rest.
+Removals can be repeated for a while after an item leaves. Treat a remove for an id you don't hold as a no-op.
+
+Read the fields you need and ignore any you don't recognise.
 
 ## Consuming the feed
 

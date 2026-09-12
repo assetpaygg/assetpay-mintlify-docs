@@ -52,8 +52,8 @@ interface Trade {
 
   // Status-specific
   revertedBy?: RevertedBy;       // Who reversed the trade (status === "reverted")
-  error?: string;                // Failure reason. Withdrawals: a TradeFailureCode, set only when the
-                                 //   whole trade failed with one shared cause. Deposits: a Steam error key.
+  error?: TradeErrorCode;        // Failure reason. Withdrawals: set only when the whole trade failed
+                                 //   with one shared cause (per-item codes are on Item.error).
 
   // Bot details
   botInfo?: {
@@ -62,6 +62,10 @@ interface Trade {
     steamId?: string;
     joined?: Date;
   };
+
+  // Basket splits (/secure/sell only)
+  relatedTrades?: Trade[];       // The other trades a basket was split into, each a full Trade.
+                                 //   Present on the primary trade returned by /secure/sell.
 }
 ```
 
@@ -72,10 +76,10 @@ Represents a skin item in inventory, market, or trade responses. Some fields are
 ```typescript
 interface Item {
   // Identity
-  id: string;                    // On CS2 withdraw items, the listing id you quoted — stable for the
+  id: string;                    // On CS2 withdraw items, the listing id you quoted, stable for the
                                  //   item's whole life. On inventory and deposit items, the encoded
                                  //   item id. Cancel endpoints accept it alongside externalId.
-  itemId?: string;               // The parent catalog item this listing belongs to — the same id you
+  itemId?: string;               // The parent catalog item this listing belongs to: the same id you
                                  //   pass to /market/item, while id above is the individual listing.
                                  //   CS2 GET /market rows only: /market/item omits it because you
                                  //   named the item in the request, and it is never present on Rust,
@@ -86,9 +90,11 @@ interface Item {
   assetId?: string;              // Raw Steam assetid. Always present on inventory listings and deposit
                                  //   items; omitted on withdraw items until the item lands in the
                                  //   recipient's Steam inventory.
+  classId?: string;              // Steam classid, when known
+  instanceId?: string;           // Steam instanceid, when known
   appid: number;                 // Game app ID (730 or 252490)
 
-  // Description — omitted on bare withdraw items where AssetPay has no Steam-side
+  // Description: omitted on bare withdraw items where AssetPay has no Steam-side
   // metadata yet (you supplied only itemId + price). Always present for inventory,
   // market, and post-completion trade items.
   name?: string;                 // Display name (e.g. "AK-47 | Redline")
@@ -111,8 +117,8 @@ interface Item {
   wear?: string;                 // Float value as string
   paintSeed?: number;            // Paint seed number
   previewToken?: string;         // Steam inspect/preview token (CS2). Present on inventory and
-                                 //   internal-pool (self-owned) items; absent on third-party
-                                 //   marketplace listings.
+                                 //   internal-pool (self-owned) items, and on third-party
+                                 //   marketplace listings when the marketplace provides one.
   doppler?: Doppler;             // Doppler phase details
   fade?: Fade;                   // Fade percentage details
   hardened?: Hardened;           // Case Hardened pattern details
@@ -122,7 +128,7 @@ interface Item {
   charm?: Charm;                 // Applied charm (CS2 only)
 
   // Market-specific
-  botInfo?: {                    // Holding bot identity — present on internal-pool market items
+  botInfo?: {                    // Holding bot identity, present on internal-pool market items
     name: string;
     avatar?: string;
     steamId?: string;
@@ -131,7 +137,7 @@ interface Item {
 
   // Withdrawal-specific (only set on items belonging to a withdraw trade)
   status?: TradeStatus;          // Per-item purchase status, mirrors Trade.status
-  error?: TradeFailureCode;      // Failure code — present only on failed withdraw items
+  error?: TradeFailureCode;      // Failure code, present only on failed withdraw items
 }
 ```
 
@@ -142,9 +148,10 @@ The marketplace offer carried on an `Item.offer`:
 ```typescript
 interface ItemOffer {
   price: number;                 // Offer price in USD
-  delivery?: DeliveryMode;       // "standard" or "instant" (market items only)
+  delivery?: DeliveryMode;       // "standard" or "instant" (market items, withdraw trade items and quick-buy rows).
+                                 //   Absent on Rust market items, and on some CS2 marketplace rows.
   maxAmount?: number;            // Max quantity for stackable items (inventory only)
-  accepted?: boolean;            // Whether the item is accepted for deposit (deposit-side inventory only)
+  accepted?: boolean;            // Whether the item is accepted for deposit (inventory and deposit trade items)
 }
 ```
 
@@ -212,17 +219,18 @@ All trade and item statuses are **lowercase** in API requests, responses, and we
 ```typescript
 type TradeStatus =
   | 'initiated'   // Trade created. Withdrawals: approval gate (merchant wallet not yet debited)
-  | 'pending'     // (Withdrawals only) Supplier is sourcing the item / creating the purchase
+  | 'pending'     // Withdrawals: supplier is sourcing the item / creating the purchase.
+                  //   Deposits: trade offer created, waiting for the bot to confirm it
   | 'active'      // Steam trade offer sent to the user, awaiting acceptance
   | 'hold'        // User accepted; Steam hold window running (carries offerID + holdEndDate)
   | 'completed'   // Trade finished successfully
   | 'failed'      // Trade failed at some point
   | 'canceled'    // Trade was canceled before completion (no penalty)
-  | 'declined'    // End user declined / let the Steam offer expire. Withdrawals: refund minus a 2% penalty
+  | 'declined'    // End user declined / let the Steam offer expire. Withdrawals: marketplace items refund minus its penalty, own stock in full
   | 'reverted';   // Previously completed trade was reversed (see revertedBy)
 ```
 
-Both deposits and withdrawals emit `active`. `pending` is withdrawal-only (the supplier sourcing step). `holdEndDate` carries the exact hold expiry, which can be later for accounts without Steam mobile auth set up.
+Both deposits and withdrawals emit `active` and `pending`. On withdrawals `pending` is the supplier sourcing step; on deposits it is the short window between creating the trade offer and the bot confirming it. `holdEndDate` carries the exact hold expiry, which can be later for accounts without Steam mobile auth set up.
 
 ### TradeType
 
@@ -239,7 +247,7 @@ Indicates whether the trade originated from an end-user client flow or a merchan
 ```typescript
 type TradeSource =
   | 'client'    // Initiated by an end-user via /client/trading/*
-  | 'self';     // Merchant self-trade via /secure/sell or /secure/buy
+  | 'self';     // Merchant self-trade via /secure/sell, /secure/buy or /secure/buy/quick
 ```
 
 ### DeliveryMode
@@ -262,16 +270,37 @@ type RevertedBy =
 
 ### TradeFailureCode
 
-Set on `Item.error` for **failed withdraw items**, and on the trade-level `error` only when an entire withdraw failed for one shared reason (mixed/partial failures leave `Trade.error` null — read the per-item codes). A small, stable set; `canceled` and `declined` items carry **no** code, since the status itself is the reason.
+Set on `Item.error` for **failed withdraw items**, and on the trade-level `error` only when an entire withdraw failed for one shared reason (mixed/partial failures omit `Trade.error`; read the per-item codes). A small, stable set; `canceled` and `declined` items carry **no** code, since the status itself is the reason.
 
 ```typescript
 type TradeFailureCode =
-  | 'LISTING_UNAVAILABLE'      // Listing sold / delisted / out of stock — retry another listing
-  | 'PRICE_CHANGED'            // Price moved above your ceiling — re-quote
+  | 'LISTING_UNAVAILABLE'      // Listing sold / delisted / out of stock. Retry another listing
+  | 'NO_LISTING_AT_PRICE'      // Nothing on sale at or below your max price. Re-quote higher or wait
+  | 'PRICE_CHANGED'            // Price moved above your ceiling. Re-quote
   | 'TRADE_URL_INVALID'        // Recipient's Steam trade URL is invalid or escrow-blocked
   | 'STEAM_ACCOUNT_RESTRICTED' // Recipient's Steam account can't receive (VAC / ban / hold / private)
-  | 'MARKET_UNAVAILABLE'       // Temporary upstream or our-side issue — retry later
+  | 'BUYER_TRADE_RESTRICTED'   // The marketplace suspended this buyer (e.g. repeated unaccepted offers),
+                               //   usually until a stated time. Distinct from Steam's own restrictions
+  | 'MARKET_UNAVAILABLE'       // Temporary upstream or our-side issue. Retry later
   | 'PURCHASE_FAILED';         // Unclassified failure (catch-all)
+```
+
+### TradeErrorCode
+
+The type of the trade-level `Trade.error`, on deposits and withdrawals alike. It contains every `TradeFailureCode` plus outcomes that have no item-level equivalent. Unrecognised causes are reported as `PURCHASE_FAILED`.
+
+```typescript
+type TradeErrorCode =
+  | TradeFailureCode
+  | 'USER_TRADE_RESTRICTED'    // The user's Steam account can't trade
+  | 'USER_INVENTORY_PRIVATE'   // The user's Steam inventory is private
+  | 'USER_ESCROW'              // Trades with the user would be held in Steam escrow
+  | 'USER_NOT_FOUND'           // No Steam user behind the trade URL
+  | 'OFFER_NOT_ACCEPTED'       // Deposits: the offer reached the user and was not accepted
+                               //   (declined, expired, canceled, items gone)
+  | 'SERVICE_UNAVAILABLE'      // A temporary issue on AssetPay's side. Retry later
+  | 'MERCHANT_REJECTED'        // Withdrawals: your approval callback rejected the trade
+  | 'APPROVAL_TIMEOUT';        // Withdrawals: your approval callback never gave an answer
 ```
 
 ### GameId
@@ -295,4 +324,4 @@ interface CallbackBody {
 }
 ```
 
-The signature lives in the `X-AssetPay-Signature` header (format `t=<iso>,id=<delivery-id>,s=<hex>`), HMAC-SHA256 over `${deliveryId}.${timestamp}.${rawBody}`. See [Callbacks](/guides/callbacks) for verification code and the withdrawal approval envelope.
+The signature lives in the `X-AssetPay-Signature` header (format `t=<iso>,id=<delivery-id>,s=<hex>`, plus an optional `,s1=<hex>` signed with your previous secret while an API secret rotation is in its grace window), HMAC-SHA256 over `${deliveryId}.${timestamp}.${rawBody}`. See [Callbacks](/guides/callbacks) for verification code and the withdrawal approval envelope.

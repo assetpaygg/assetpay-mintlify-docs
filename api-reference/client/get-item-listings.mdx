@@ -10,7 +10,7 @@ Returns individual listings for a specific item. Use this when you want to let u
 ## Request
 
 ```http
-GET https://api.assetpay.gg/client/market/item?itemId=marketplace-item-id&delivery=any&page=1
+GET https://api.assetpay.gg/client/market/item?itemId=0010f8d48278ccb8&delivery=any&page=1
 Authorization: CLIENT_TOKEN
 ```
 
@@ -18,12 +18,12 @@ Authorization: CLIENT_TOKEN
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `itemId` | string | Required\* | Marketplace item ID. For CS2 listings, this is the Assetpay item identifier returned by `/client/market` or `/client/market/suggestions`. Provide this **or** `marketHashName`; `itemId` wins when both are sent. |
-| `marketHashName` | string | Required\* | Exact market hash name (e.g. `AK-47 \| Redline (Field-Tested)`), resolved to the catalog item id. Ignored when `itemId` is supplied. |
+| `itemId` | string | Required\* | Catalog item ID (1-256 chars): the `itemId` of a [`/client/market`](/api-reference/client/get-market) row, or the `id` of a [suggestion](/api-reference/client/get-suggestions). Provide this **or** `marketHashName`; `itemId` wins when both are sent. |
+| `marketHashName` | string | Required\* | Exact market hash name (1-256 chars, e.g. `AK-47 \| Redline (Field-Tested)`), resolved to the catalog item id. Ignored when `itemId` is supplied. |
 | `delivery` | string | `any` | `"any"`, `"standard"` (bot sources from supplier and sends trade offer) or `"instant"` (immediate delivery from pre-positioned stock). Filters listings by delivery mode. |
-| `phase` | string | - | Doppler phase: `"Phase 1"`–`"Phase 4"`, `"Ruby"`, `"Sapphire"`, `"Black Pearl"`, `"Emerald"`. Returns only that phase's listings. Combinable with `delivery`. |
-| `floatMin` | number | - | Lower bound on the item float/wear value (`0`–`1`). |
-| `floatMax` | number | - | Upper bound on the item float/wear value (`0`–`1`). |
+| `phase` | string | - | Doppler phase: `"Phase 1"` to `"Phase 4"`, `"Ruby"`, `"Sapphire"`, `"Black Pearl"`, `"Emerald"`. Returns only that phase's listings. Combinable with `delivery`. |
+| `floatMin` | number | - | Lower bound on the item float/wear value (`0` to `1`). |
+| `floatMax` | number | - | Upper bound on the item float/wear value (`0` to `1`). |
 | `page` | number | `1` | Page number |
 | `perPage` | number | `50` | Listings per page (max 100) |
 
@@ -44,6 +44,7 @@ Authorization: CLIENT_TOKEN
       "iconUrl": "IzMF03bk9WpSBq-S-ekoE33L-iLqGFHVaU25ZzQNQcXdA3g5gMEPvUZZEfSMJ6dESN8p_2SVTY7V2N4MxGVIwXpaL3_a3Hh...",
       "appid": 730,
       "tradable": true,
+      "marketPrice": 10.50,
       "offer": {
         "price": 10.50,
         "delivery": "standard"
@@ -65,28 +66,32 @@ Authorization: CLIENT_TOKEN
       "id": "listing-uuid-2",
       "name": "AK-47 | Redline",
       "marketHashName": "AK-47 | Redline (Field-Tested)",
+      "type": "Rifle",
+      "iconUrl": "IzMF03bk9WpSBq-S-ekoE33L-iLqGFHVaU25ZzQNQcXdA3g5gMEPvUZZEfSMJ6dESN8p_2SVTY7V2N4MxGVIwXpaL3_a3Hh...",
       "appid": 730,
       "tradable": true,
+      "marketPrice": 9.80,
       "offer": {
         "price": 9.80,
         "delivery": "instant"
       },
       "wear": "0.35678",
-      "paintSeed": 456,
-      "stickers": []
+      "paintSeed": 456
     }
   ]
 }
 ```
 
-Each listing represents a specific item instance with its own float value, stickers, and price. Use the `id` and `offer.price` when initiating a withdrawal.
+Each listing represents a specific item instance with its own float value, stickers, and price. Use the `id` and `offer.price` when initiating a withdrawal. On supplier listings `marketPrice` equals `offer.price`, and `type` and `iconUrl` are always present (an empty string when unknown).
+
+When pool stock is included (any `delivery` other than `"standard"`), pool listings are merged with supplier listings and the combined list is sorted by `offer.price` ascending before it is paginated. Pool listings carry `assetId` and `botInfo`, have no `marketPrice`, and always deliver `"instant"`. In a merged response only the first `min(100, page * perPage)` supplier listings are fetched, so supplier listings deeper than that can't be reached by paging. If supplier listings can't be loaded, the pool listings are returned without an error.
 
 <Note>
-This endpoint is currently CS2-only. Rust withdrawals don't use per-variant listings — the cheapest available stack is sourced when the withdrawal is purchased.
+This endpoint is currently CS2-only. Rust withdrawals don't use per-variant listings: the cheapest available stack is sourced when the withdrawal is purchased.
 </Note>
 
 <Note>
-Listings here carry no `itemId` — you named the item in the request, and every row belongs to it. `id` identifies the individual listing and is what you pass to a withdrawal. `itemId` appears on [`GET /client/market`](/api-reference/client/get-market) rows, where the response spans many items.
+Listings here carry no `itemId`: you named the item in the request, and every row belongs to it. `id` identifies the individual listing and is what you pass to a withdrawal. `itemId` appears on [`GET /client/market`](/api-reference/client/get-market) rows, where the response spans many items.
 </Note>
 
 ## Rate Limits
@@ -95,3 +100,14 @@ Listings here carry no `itemId` — you named the item in the request, and every
 |----------------|-------|
 | Verified | 600 requests / min |
 | Unverified | 30 requests / min |
+
+## Errors
+
+| Code | Key | When |
+|------|-----|------|
+| 14 | `LISTING_NOT_FOUND` | Listings for the item couldn't be loaded and there is no pool stock to return instead (HTTP 404) |
+| 1001 | `VALIDATION_FAILED` | Neither `itemId` nor `marketHashName` sent, or another parameter is invalid (HTTP 400, details in `error.fields`) |
+| 1005 | `RATE_LIMITED` | Rate limit exceeded (HTTP 429) |
+| 1007 | `SYSTEM_MAINTENANCE` | Service is in maintenance mode (HTTP 503) |
+| 1102 | `INVALID_TOKEN` | Client token is invalid or expired |
+| 1108 | `MISSING_BEARER` | No `Authorization` header |

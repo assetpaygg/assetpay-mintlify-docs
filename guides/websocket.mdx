@@ -8,7 +8,7 @@ AssetPay provides a Socket.IO WebSocket connection for real-time updates. Use it
 
 ## Connecting
 
-Connect using Socket.IO with your API key or a client token:
+Connect using Socket.IO with your API key, a client token, or a merchant dashboard access token:
 
 **With API key (merchant-level access):**
 ```
@@ -20,9 +20,14 @@ wss://api.assetpay.gg/socket.io/?apiKey=YOUR_API_KEY&EIO=4&transport=websocket
 wss://api.assetpay.gg/socket.io/?token=CLIENT_TOKEN&EIO=4&transport=websocket
 ```
 
-Both methods join the same merchant room and receive the same trade, deposit, and withdrawal events. Use whichever is more convenient for your architecture.
+**With merchant access token (dashboard JWT):**
+```
+wss://api.assetpay.gg/socket.io/?token=ACCESS_TOKEN&EIO=4&transport=websocket
+```
 
-One exception: [market updates](#market-updates) are delivered only to API key connections where the key has the `CORE_ACCESS` scope. Client token connections never receive them.
+All three methods join the same merchant room and receive the same trade, deposit, and withdrawal events. Use whichever is more convenient for your architecture. Admin credentials don't join a merchant room and never receive market updates.
+
+One exception: [market updates](#market-updates) are delivered only to merchant API key connections where the key has the `CORE_ACCESS` scope. Client token and access token connections never receive them.
 
 ### Socket.IO Client Example
 
@@ -101,8 +106,12 @@ socket.on('market', (event) => {
     case 'remove': // event.itemId is no longer available
       removeItem(event.game, event.itemId);
       break;
-    case 'sync':   // market rebuilt; discard local state for that game and refetch
-      refetchMarket(event.game); // GET /secure/market?game=<event.game>
+    case 'sync':   // market rebuilt; discard local state and refetch
+      if (event.game) {
+        refetchMarket(event.game); // GET /secure/market?game=<event.game>
+      } else {
+        refetchAllMarkets();       // connect sync: refetch every game you offer
+      }
       break;
   }
 });
@@ -110,19 +119,22 @@ socket.on('market', (event) => {
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `game` | number | App id: `730` for CS2, `252490` for Rust |
-| `source` | string | Market lane. Always `"internal"` |
+| `game` | number | App id: `730` for CS2, `252490` for Rust. Absent on the `sync` sent on connect |
+| `source` | string | Market lane. Always `"internal"`. Absent on the `sync` sent on connect |
 | `type` | string | `"upsert"`, `"patch"`, `"remove"`, or `"sync"` |
-| `item` | object | Present on `upsert` and `patch`. The full item, same shape as `/secure/market` items, priced for your account |
+| `item` | object | Present on `upsert` and `patch`. The full item, same shape as `/secure/market` items |
 | `itemId` | string | Present on `remove`. The `id` of the item to drop |
+| `reason` | string | Present on `sync`. `"subscribe"` for the one sent right after you connect, `"feed"` when a market was rebuilt |
+| `at` | string | Optional on CS2 `upsert` and `patch`. The time the item's price was last updated |
 
 Notes on applying events:
 
-- `upsert` and `patch` both carry the full item. Apply either as an idempotent upsert keyed on `item.id`; the distinction only signals whether the item is new or changed. Not every game emits both, so never branch on which of the two you received.
+- Every new connection first receives `{ "type": "sync", "reason": "subscribe" }` with no `game` or `source`. Events sent while you were disconnected are not replayed, so treat it as a signal to refetch every game you offer.
+- `upsert` and `patch` both carry the full item. Apply either as an idempotent upsert keyed on `item.id`; the distinction only signals whether the item is new or changed. Rust never emits `patch`, so never branch on which of the two you received.
 - A `remove` can arrive for an item you never saw. Ignore it in that case.
-- On `sync`, your local view for that `game` may be arbitrarily stale. Refetch `GET /secure/market?game=<game>` and rebuild from the response. A `sync` affects only the game it names; leave the other game's state alone.
+- On a `sync` with `reason: "feed"`, your local view for that `game` may be arbitrarily stale. Refetch `GET /secure/market?game=<game>` and rebuild from the response. Such a `sync` affects only the game it names; leave the other game's state alone.
 - A price change does not always arrive as a `patch`. Where an item's `id` is tied to the price it is offered at, the same change arrives as a `remove` of the old entry followed by an `upsert` of a new one. Apply events in the order received.
-- Prices are per merchant account, so the `offer.price` you receive already reflects your fee. Still validate the price at purchase time as described in [Market](/guides/market#keeping-prices-updated).
+- CS2 prices are per merchant account, so the `offer.price` you receive already reflects your fee. Rust events carry the price at the default fee, while `GET /secure/market?game=252490` applies your account's fee, so the two can differ when your fee is not the default. Still validate the price at purchase time as described in [Market](/guides/market#keeping-prices-updated).
 
 ## WebSocket vs Callbacks
 

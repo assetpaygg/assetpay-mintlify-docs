@@ -55,7 +55,7 @@ api-key: YOUR_API_KEY
 | `reason` | object | Present only when `canTrade` is `false` |
 | `reason.escrowDays` | number | Steam escrow days (0 if mobile auth is set up) |
 | `reason.probation` | boolean | Whether the account is on probation |
-| `bans` | object | Steam ban record for the account (present when the URL resolves to a user) |
+| `bans` | object | Steam ban record for the account (present when the URL resolves to a user; omitted when the ban lookup fails) |
 | `bans.vacBanned` | boolean | VAC ban on record. Blocks CS2 deposits; Rust is unaffected |
 | `bans.gameBans` | number | Game bans on record. Informational only; Steam still trades for these accounts |
 | `bans.economyBan` | string | Steam economy ban state: `none`, `probation` or `banned` |
@@ -65,19 +65,19 @@ api-key: YOUR_API_KEY
 | Value | Name | Meaning |
 |-------|------|---------|
 | `1` | Normal | Trade URL is valid, full trading permissions |
-| `2` | CS2Banned | Can trade Rust items but not CS2 items. Also returned when `bans` shows a VAC ban: Steam refuses CS2 offers from such accounts even though the inventory still lists the items as tradable, and a CS2 deposit fails with `USER_NOT_TRADEABLE` |
+| `2` | CS2Banned | Can trade Rust items but not CS2 items. Also returned when `bans` shows a VAC ban or `economyBan: "banned"`: Steam refuses CS2 offers from such accounts even though the inventory still lists the items as tradable, and a CS2 deposit fails with `USER_NOT_TRADEABLE`. An economy ban blocks Rust deposits too |
 | `3` | RustBanned | Can trade CS2 items but not Rust items |
 | `4` | Banned | No trading permissions for any game |
 | `5` | InventoryPrivate | User's inventory is set to private |
-| `6` | TradeUrlInvalid | The trade URL format is invalid |
+| `6` | TradeUrlInvalid | Steam rejected the trade URL as invalid. A malformed URL never reaches Steam: it fails validation with `VALIDATION_FAILED` (1001) |
 | `7` | UserNotFound | No user found under this trade URL |
 | `8` | UnknownError | An unexpected error occurred |
-| `9` | UserNotTradeable | Steam reports the account as not available to trade (new device, recent password change, Steam Guard cooldown) |
+| `9` | UserNotTradeable | Steam reports the account as not available to trade (new device, recent password change, Steam Guard cooldown), or reports that trades with it would be held in escrow |
 | `10` | SteamUnavailable | Steam did not answer; retry later |
 
 ## Caching
 
-Results are cached for 1 hour. Use `forceRefresh: true` only when you need to recheck a specific URL, not on every call.
+Results are cached for 5 minutes. An `UnknownError` (state `8`) result is never cached. Use `forceRefresh: true` only when you need to recheck a specific URL, not on every call.
 
 ## Rate Limits
 
@@ -85,3 +85,10 @@ Results are cached for 1 hour. Use `forceRefresh: true` only when you need to re
 |----------------|-------|
 | Verified | 100,000 requests / hour |
 | Unverified | 100 requests / hour |
+
+## Errors
+
+| Code | Key | When |
+|------|-----|------|
+| 1001 | `VALIDATION_FAILED` | `tradeurl` is not a well-formed Steam trade URL. HTTP 400, see `error.fields` |
+| 1011 | `FLEET_DEGRADED` | No Steam bot can serve the check right now. HTTP 503 with `Retry-After: 30` |

@@ -5,6 +5,8 @@ description: "Return the authenticated client's trade history with cursor-based 
 
 Returns the trade history for the authenticated client. Supports filtering by type and game with cursor-based pagination.
 
+Only trades created through the client flow for this Steam account under your merchant account are returned. Trades you create yourself through the `/secure/*` endpoints are not included.
+
 **Authentication:** Client Token (`Authorization` header)
 
 ## Request
@@ -20,7 +22,7 @@ Authorization: CLIENT_TOKEN
 |-----------|------|---------|-------------|
 | `type` | string | - | Filter by `"deposit"` or `"withdraw"` |
 | `game` | string | `730` | Game app ID (`"730"` = CS2, `"252490"` = Rust) |
-| `cursor` | string | - | Opaque cursor from a previous response's `nextCursor`. Omit on the first page. |
+| `cursor` | string | - | Opaque cursor from a previous response's `nextCursor`. Omit on the first page. A cursor that can't be decoded is ignored and the first page is returned. |
 | `limit` | number | `20` | Trades per page (min 1, max 100) |
 
 ## Response
@@ -38,15 +40,20 @@ Authorization: CLIENT_TOKEN
         "status": "completed",
         "game": "730",
         "externalId": "dep_123",
+        "externalClientUserId": "user-123",
         "merchantId": "merchant-uuid",
         "clientUserId": "client-uuid",
         "clientSteamID": "76561198012345678",
         "clientTradeUrl": "https://steamcommunity.com/tradeoffer/new/?partner=...",
+        "offerID": "7123456789",
         "items": [
           {
             "id": "encoded-item-id",
+            "assetId": "38912345678",
+            "appid": 730,
             "name": "AK-47 | Redline",
             "marketHashName": "AK-47 | Redline (Field-Tested)",
+            "tradable": true,
             "offer": {
               "price": 10.75,
               "accepted": true
@@ -58,6 +65,7 @@ Authorization: CLIENT_TOKEN
         "pendingCredit": 2.15,
         "isInstant": true,
         "holdEndDate": "2026-03-11T10:00:00.000Z",
+        "activeAt": "2026-03-04T10:01:00.000Z",
         "createdAt": "2026-03-04T10:00:00.000Z",
         "updatedAt": "2026-03-11T10:00:00.000Z"
       }
@@ -73,6 +81,8 @@ Authorization: CLIENT_TOKEN
 |-------|------|-------------|
 | `items` | [Trade](/reference/types#trade)[] | Array of trade objects, newest first |
 | `nextCursor` | string \| null | Opaque cursor for the next page. Pass it back in the `cursor` query parameter. `null` when there are no more results. |
+
+Depending on the trade, each object can also carry `externalClientUserId`, `offerID`, `revertedBy`, `botInfo`, `error`, `activeAt` and `autoCancelAt`. Deposit items include the Steam `assetId` of the deposited item.
 
 ### Paginating
 
@@ -97,3 +107,13 @@ do {
 |----------------|-------|
 | Verified | 3,000 requests / min |
 | Unverified | 30 requests / min |
+
+## Errors
+
+| Code | Key | When |
+|------|-----|------|
+| 1001 | `VALIDATION_FAILED` | Invalid query parameter (HTTP 400, details in `error.fields`) |
+| 1005 | `RATE_LIMITED` | Rate limit exceeded (HTTP 429) |
+| 1007 | `SYSTEM_MAINTENANCE` | Service is in maintenance mode (HTTP 503) |
+| 1102 | `INVALID_TOKEN` | Client token is invalid or expired |
+| 1108 | `MISSING_BEARER` | No `Authorization` header |

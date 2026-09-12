@@ -23,6 +23,7 @@ Response:
     "inventory": [
       {
         "id": "a1b2c3d4-...",
+        "assetId": "38912345678",
         "name": "AK-47 | Redline",
         "marketHashName": "AK-47 | Redline (Field-Tested)",
         "type": "Rifle",
@@ -32,16 +33,13 @@ Response:
         "marketPrice": 12.50,
         "offer": {
           "price": 10.75,
-          "reference": "ref_abc123",
-          "accepted": true,
-          "maxAmount": 1
+          "accepted": true
         },
         "exterior": "Field-Tested",
         "wear": "0.25432",
         "rarity": "Classified",
         "color": "#D32CE6",
         "paintSeed": 312,
-        "propId": "S76561198012345678A12345678D8888888888888888888",
         "stickers": [
           {
             "name": "Natus Vincere | Katowice 2019",
@@ -64,10 +62,11 @@ Response:
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `game` | string | `730` | Game app ID (`"730"` for CS2, `"252490"` for Rust) |
+| `game` | integer | `730` | Game app ID (`730` for CS2, `252490` for Rust). Must be a positive integer. |
 | `refresh` | boolean | `false` | Force-refresh from Steam instead of using cache |
-| `search` | string | - | Filter items by name (max 100 chars) |
-| `sort` | string | - | `relevance`, `priceAsc`, `priceDesc`, `nameAsc`, or `nameDesc` |
+| `acceptedOnly` | boolean | `false` | Return only items with `offer.accepted = true`. Applied before search, price filters, sorting and pagination, so `count` reflects it. Only `true` or `false` are accepted. |
+| `search` | string | - | Filter items by name |
+| `sort` | string | - | `relevance`, `priceAsc`, `priceDesc`, `nameAsc`, or `nameDesc`. Any other value is ignored. |
 | `minPrice` | number | - | Minimum offer price filter (USD) |
 | `maxPrice` | number | - | Maximum offer price filter (USD) |
 | `page` | number | `1` | Page number |
@@ -79,13 +78,12 @@ Response:
 
 Each item can have two price fields, and they mean different things:
 
-- **`marketPrice`** is the market reference price in USD. This is not what the user gets paid. Use it to show market value context in your UI. It reflects live multi-marketplace data — order books, liquidity and realized sales aggregated by [cs2.sh](https://cs2.sh) — run through AssetPay's fair-value model.
+- **`marketPrice`** is the market reference price in USD. This is not what the user gets paid. Use it to show market value context in your UI. It reflects live multi-marketplace data (order books, liquidity and realized sales aggregated by [cs2.sh](https://cs2.sh)) run through AssetPay's fair-value model. On Rust items there is no separate market quote: `marketPrice` is the deposit offer price rounded up.
 - **`offer.price`** is the actual amount in USD the user will receive for depositing this item. This is the number that matters for your balance calculations.
-- **`offer.reference`** is an opaque marketplace identifier. AssetPay uses it internally; you don't need to pass it back.
 
 ### The `offer.accepted` Field
 
-Items where `offer.accepted` is `true` have a valid offer and can be deposited. Items where it's `false` or the `offer` is missing entirely don't have an active buyer and can't be deposited right now.
+Every inventory item carries an `offer` object. Items where `offer.accepted` is `true` have a valid offer and can be deposited. Items with no quote, or whose stock is already full, come back with `offer.price` of `0` and `offer.accepted: false` and can't be deposited right now. Pass `acceptedOnly=true` to leave them out of the response.
 
 ### Collateral
 
@@ -103,19 +101,22 @@ Don't refresh on every page load. It puts unnecessary load on Steam's API and ca
 
 ## Rust Items
 
-Rust items work the same way, but they can be stackable. When an item has an `amount` field greater than 1, it means the user has multiple copies of the same item. The `offer.maxAmount` field tells you how many can be deposited in a single trade.
+Rust items work the same way, but they can be stackable. When an item has an `amount` field greater than 1, the user holds several units in one Steam asset. A stacked asset is capped at `offer.maxAmount: 1`, so each deposit takes one unit from it. A single (unstacked) Rust item carries `offer.maxAmount` only when its offer has a stock limit. CS2 items don't carry `offer.maxAmount`.
 
 ```json
 {
   "id": "...",
+  "assetId": "5213981234567890123",
   "name": "Large Wood Box",
   "marketHashName": "Large Wood Box",
   "appid": 252490,
+  "tradable": true,
   "amount": 5,
+  "marketPrice": 0.15,
   "offer": {
     "price": 0.15,
-    "reference": "ref_rust_123",
-    "maxAmount": 10
+    "maxAmount": 1,
+    "accepted": true
   }
 }
 ```
@@ -125,7 +126,7 @@ Rust items work the same way, but they can be stackable. When an item has an `am
 You can combine query parameters to build a search UI:
 
 ```http
-GET https://api.assetpay.gg/client/inventory?game=730&search=knife&minPrice=50&maxPrice=500&sort=priceAsc
+GET https://api.assetpay.gg/client/inventory?game=730&acceptedOnly=true&search=knife&minPrice=50&maxPrice=500&sort=priceAsc
 Authorization: CLIENT_TOKEN
 ```
 

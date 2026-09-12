@@ -33,24 +33,26 @@ api-key: YOUR_API_KEY
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `clientSteamId` | string | Yes | Steam ID 64 (must match `76561XXXXXXXXXXXX` format, 17 digits) |
-| `clientTradeUrl` | string | Yes | Steam trade offer URL |
+| `clientTradeUrl` | string | Yes | Steam trade offer URL in exactly this form: `https://steamcommunity.com/tradeoffer/new/?partner=<partner>&token=<token>`, where `partner` is 1-10 digits and `token` is 8 characters of `A-Z`, `a-z`, `0-9`, `_` or `-`. No other query parameters are allowed. |
 | `clientId` | string | No | Your own user identifier (max 128 chars). Stored on every trade as `externalClientUserId`. |
 | `clientData` | object | No | User context for collateral calculations. See `clientData` fields below. |
 
+Unknown top-level body keys are rejected with `1001 VALIDATION_FAILED`.
+
 ### clientData Fields
 
-These fields feed into the risk model that determines instant deposit collateral. All are optional and default to `0`/`false`/`null` if omitted.
+`totalWager`, `kycLevel`, `fiatDeposits` and `cryptoDeposits` feed into the risk model that determines instant deposit collateral. All fields are optional and default to `0`/`false`/`null` if omitted. Keys not listed here are dropped.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `totalWager` | number | Total USD amount the user has wagered on your platform. Higher values increase external trust score. |
-| `kycLevel` | number | User's KYC verification level on your platform (0-3). Level 3 unlocks higher collateral thresholds. |
+| `totalWager` | number | Total USD amount the user has wagered on your platform (`0` or more). Higher values increase external trust score. |
+| `kycLevel` | integer | User's KYC verification level on your platform (`0` or more). Level 3 lowers the wager threshold used in scoring; higher values are scored as 3. |
 | `fiatDeposits` | boolean | User has made fiat deposits on your platform. |
 | `cryptoDeposits` | boolean | User has made crypto deposits on your platform. |
-| `registrationDate` | string (ISO 8601) | When the user registered on your platform. Older accounts get a small trust boost. |
-| `kycHash` | string | Opaque hash you compute from the user's KYC identifiers. Used by AssetPay to detect when a single verified identity links to multiple Steam accounts. |
+| `registrationDate` | string (ISO 8601) | When the user registered on your platform. Accepted but not currently used for scoring. |
+| `kycHash` | string | Opaque hash you compute from the user's KYC identifiers. Accepted but not currently used for scoring. |
 
-Having both `fiatDeposits` and `cryptoDeposits` as `true` combined with `kycLevel: 3` gives the highest collateral multiplier. The `clientData` is updated on every authentication call, so pass current values each time.
+Having both `fiatDeposits` and `cryptoDeposits` as `true` combined with `kycLevel: 3` applies the lowest wager threshold, so the same wager earns the most collateral. `kycLevel: 3` alone, or both deposit types alone, applies the middle threshold. This endpoint only signs a token: nothing is stored when you call it. The `clientData` inside the token is saved to the user's record when they create a deposit or withdrawal with that token, so issue a new token whenever the values change.
 
 ## Response
 
@@ -93,11 +95,11 @@ The generated JWT contains:
     "clientData": { "totalWager": 5000, "kycLevel": 2, "fiatDeposits": true, "cryptoDeposits": false }
   },
   "iat": 1709550000,
-  "exp": 1741086000
+  "exp": 1709636400
 }
 ```
 
-The `merchantId` claim and the JWT header `userId` field both carry the merchant ID. AssetPay uses either to look up your API secret during verification.
+The `merchantId` claim and the JWT header `userId` field both carry the merchant ID. AssetPay looks up your API secret by the header `userId` only, so a token without it fails with `1102 INVALID_TOKEN`.
 
 ## Rate Limits
 
@@ -110,8 +112,12 @@ The `merchantId` claim and the JWT header `userId` field both carry the merchant
 
 | Code | Key | When |
 |------|-----|------|
-| 1001 | `VALIDATION_FAILED` | Invalid Steam ID format, missing trade URL, etc. |
+| 1001 | `VALIDATION_FAILED` | Invalid Steam ID or trade URL format, missing field, or unknown body key (HTTP 400, details in `error.fields`) |
+| 1005 | `RATE_LIMITED` | Rate limit exceeded (HTTP 429) |
+| 1300 | `MERCHANT_API_KEY_REQUIRED` | An admin API key was used; this route needs a merchant key (HTTP 403) |
+| 1301 | `ACCOUNT_DISABLED` | The account that owns the API key is not active |
 | 1900 | `MISSING_API_KEY` | No `api-key` header provided |
 | 1901 | `INVALID_API_KEY` | API key not found or invalid |
-| 1903 | `API_KEY_SCOPE_DENIED` | Key doesn't have `CORE_ACCESS` scope |
+| 1904 | `API_KEY_IP_DENIED` | Request IP is not in the key's IP allowlist |
+| 1908 | `INSUFFICIENT_SCOPE` | Key doesn't have `CORE_ACCESS` scope |
 | 1915 | `NO_API_SECRET_CONFIGURED` | Merchant has no active API secret to sign the client token with |

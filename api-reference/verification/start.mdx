@@ -23,7 +23,7 @@ Authorization: CLIENT_TOKEN
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `email` | string | No | Email associated with the user. Recommended — required later for multi-account linking via `/client/verification/link`. |
+| `email` | string | No | Email associated with the user, in valid email format. Recommended, since it is required later for multi-account linking via `/client/verification/link`. No other body fields are accepted. |
 
 ## Response
 
@@ -42,14 +42,18 @@ Open `captureUrl` in the user's browser or webview. After they complete the capt
 
 ## Limits
 
-- Only one active process per user. A new call within 30 minutes of an unfinished process returns `VERIFICATION_IN_PROGRESS`.
+- Only one active process per user. A new call within 30 minutes of starting a process that is still `CREATED` (no result yet) returns `VERIFICATION_IN_PROGRESS`. After 30 minutes a new process can be started, even though the old one keeps its `CREATED` status.
 - Already-verified clients (`verificationLevel >= 1`) get `VERIFICATION_ALREADY_VERIFIED`.
+- Rate limit: 3 requests per 10 minutes.
 
 ## Errors
 
 | Code | Key | When |
 |------|-----|------|
-| 2300 | `VERIFICATION_NOT_AVAILABLE` | Signicat credentials not configured for this environment |
-| 2301 | `VERIFICATION_ALREADY_VERIFIED` | Client is already at level 1 |
-| 2302 | `VERIFICATION_IN_PROGRESS` | An active process exists from the last 30 minutes |
+| 2300 | `VERIFICATION_NOT_AVAILABLE` | Signicat credentials not configured for this environment (HTTP 503) |
+| 2301 | `VERIFICATION_ALREADY_VERIFIED` | Client is already at level 1 (HTTP 400) |
+| 2302 | `VERIFICATION_IN_PROGRESS` | A process started in the last 30 minutes has no result yet (HTTP 400) |
+| 1001 | `VALIDATION_FAILED` | Invalid body, such as a malformed `email` or an unknown field (HTTP 400). `error.fields` maps each invalid field to its reason |
+| 1005 | `RATE_LIMITED` | More than 3 requests in 10 minutes (HTTP 429) |
 | 1102 | `INVALID_TOKEN` | Client token is invalid or expired |
+| 1108 | `MISSING_BEARER` | The `Authorization` header is missing |

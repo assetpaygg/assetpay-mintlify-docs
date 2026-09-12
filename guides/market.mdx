@@ -29,19 +29,16 @@ Response:
         "iconUrl": "IzMF03bk9WpSBq-S-ekoE33L-iLqGFHVaU25ZzQNQcXdEHOQ6UFc5FT_0NqFMOBBN-s...",
         "appid": 730,
         "tradable": true,
-        "marketPrice": 1850.00,
+        "marketPrice": 1720.50,
         "offer": {
           "price": 1720.50,
-          "reference": "ref_market_456",
           "delivery": "standard"
         },
         "exterior": "Factory New",
         "wear": "0.01234",
         "rarity": "Covert",
         "color": "#EB4B4B",
-        "paintSeed": 661,
-        "stickers": [],
-        "charm": null
+        "paintSeed": 661
       }
     ],
     "count": 1523
@@ -49,32 +46,37 @@ Response:
 }
 ```
 
+On supplier listings `marketPrice` equals `offer.price`. Pool rows (those carrying `botInfo`) omit `marketPrice`. Rust rows carry neither `marketPrice` nor `offer.delivery` (outside sandbox mode).
+
 ## Query Parameters
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `game` | string | `730` | `"730"` for CS2 or `"252490"` for Rust |
+| `game` | integer | `730` | `730` for CS2 or `252490` for Rust. Any other positive integer is served as CS2. |
 | `search` | string | - | Search by item name (max 100 chars) |
 | `sort` | string | - | `relevance`, `priceAsc`, `priceDesc`, `nameAsc`, or `nameDesc` |
-| `minPrice` | number | - | Minimum price filter (USD) |
-| `maxPrice` | number | - | Maximum price filter (USD) |
+| `minPrice` | number | - | Minimum price filter (USD, `0` or more) |
+| `maxPrice` | number | - | Maximum price filter (USD, `0` or more) |
 | `page` | number | `1` | Page number |
-| `perPage` | number | `50` | Items per page (min 1, max 1000) |
+| `perPage` | number | `50` | Items per page (1 to 1000, or `-1` to return every matching item) |
 | `development` | boolean | `false` | Sandbox flag. When `true` (or `1`), every returned item is stamped with the full item shape (see [Sandbox Mode](#sandbox-mode)) |
 
 ## Sandbox Mode
 
-When you pass `development=true` (or `development=1`), the market returns the same live listings but stamps every item so you can build your UI against the complete item shape without needing expensive skins in the pool:
+When you pass `development=true` (or `development=1`), the market returns live listings but stamps every item so you can build your UI against the complete item shape without needing expensive skins in the pool:
 
-- `offer.delivery` is forced to `"instant"`
+- CS2 supplier listings are limited to those that deliver instantly
+- `offer.delivery` is forced to `"instant"` (an item with no offer gets `{ "price": 0, "delivery": "instant" }`)
 - `previewToken` is set to a fixed placeholder inspect token
 - `botInfo` is populated with a synthetic holding bot
+- `assetId` is replaced with a synthetic ID
 
-This lets you exercise instant delivery, preview tokens, and bot attribution against cheap live listings. It only changes the shape of the response; it does not create or reserve any real items. On `/secure/market`, the `source` filter is ignored in sandbox mode so all suppliers are returned uniformly.
+This lets you exercise instant delivery, preview tokens, and bot attribution against cheap live listings. It only changes the shape of the response; it does not create or reserve any real items. On `/secure/market`, the `source` filter is ignored in sandbox mode, so you get the same default sources as a request without `source`; a source that is only returned when requested explicitly is never included.
 
 ```json
 {
   "id": "e5f6g7h8-...",
+  "assetId": "53817264501",
   "name": "P250 | Sand Dune",
   "appid": 730,
   "tradable": true,
@@ -101,7 +103,7 @@ GET https://api.assetpay.gg/client/market/suggestions?q=drag
 Authorization: CLIENT_TOKEN
 ```
 
-This returns a lightweight list of matching item names, faster than a full market search.
+This returns a lightweight array of matching CS2 items, faster than a full market search. Each entry is an object with `id`, `marketHashName` and `iconUrl`, plus `rarity`, `rarityColor` and `itemType` when known. Pass a suggestion's `id` as `itemId` to the item listings endpoint below. See the [API Reference](/api-reference/client/get-suggestions) for the full shape.
 
 ## Item Listings
 
@@ -114,12 +116,12 @@ Authorization: CLIENT_TOKEN
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `itemId` | string | Required\* | The marketplace item ID returned by `/client/market` or `/client/market/suggestions` |
+| `itemId` | string | Required\* | Catalog item ID: the `itemId` of a `/client/market` row, or the `id` of a suggestion |
 | `marketHashName` | string | Required\* | Exact market hash name, resolved to the catalog item id. Use instead of `itemId`; `itemId` wins when both are sent |
-| `delivery` | string | `any` | `"any"`, `"standard"`, or `"instant"` — filters listings by delivery mode |
-| `phase` | string | - | Doppler phase (`"Ruby"`, `"Phase 1"`, etc.) — returns only that phase's listings; combinable with `delivery` |
-| `floatMin` | number | - | Lower bound on the item float/wear value (`0`–`1`) |
-| `floatMax` | number | - | Upper bound on the item float/wear value (`0`–`1`) |
+| `delivery` | string | `any` | `"any"`, `"standard"`, or `"instant"`. Filters listings by delivery mode |
+| `phase` | string | - | Doppler phase (`"Ruby"`, `"Phase 1"`, etc.). Returns only that phase's listings; combinable with `delivery` |
+| `floatMin` | number | - | Lower bound on the item float/wear value (`0` to `1`) |
+| `floatMax` | number | - | Upper bound on the item float/wear value (`0` to `1`) |
 | `page` | number | `1` | Page number |
 | `perPage` | number | `50` | Listings per page (max `100`) |
 
@@ -131,11 +133,11 @@ This returns individual listings with different float values, stickers, and pric
 
 For market items (withdrawals), the `offer.price` is what it costs to buy this item. This is the amount that gets deducted from the merchant's wallet balance.
 
-The `delivery` field indicates how the item will be sourced:
-- `"standard"` – the bot sources the item from a marketplace supplier when the purchase is approved, then sends a Steam trade offer to the user
-- `"instant"` – the item is already pre-positioned on the bot and the trade offer is sent immediately
+The `delivery` field (CS2 only) indicates how the item will be sourced:
+- `"standard"`: the bot sources the item from a marketplace supplier when the purchase is approved, then sends a Steam trade offer to the user
+- `"instant"`: the item is already pre-positioned on the bot and the trade offer is sent immediately
 
-In both cases, the final delivery to the user is via a Steam trade offer they must accept. Pass the item's `id` and `offer.price` when initiating the withdrawal — AssetPay routes the purchase to the correct marketplace supplier internally.
+In both cases, the final delivery to the user is via a Steam trade offer they must accept. Pass the item's `id` and `offer.price` when initiating the withdrawal. AssetPay routes the purchase to the correct marketplace supplier internally.
 
 ## Keeping Prices Updated
 

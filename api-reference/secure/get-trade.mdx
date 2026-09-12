@@ -1,9 +1,9 @@
 ---
 title: "Get Self-Trade(s)"
-description: "Fetch one merchant self-trade by internal trade id or by the externalId you supplied at creation. Scoped to the calling merchant's own trades, single or batch."
+description: "Fetch your trades by internal trade id or by the externalId you supplied at creation, one or up to 100 at a time. Covers self-trades and client trades alike."
 ---
 
-Returns trades initiated via `/secure/sell` or `/secure/buy`. `tradeId` accepts either the internal trade id or the `externalId` you supplied at creation. Scoped to the calling merchant — another merchant's trade or a `client`-source trade is treated as not found.
+Returns the calling merchant's trades of any source: self-trades from `/secure/sell`, `/secure/buy` and `/secure/buy/quick` (`source: "self"`) as well as trades your clients created (`source: "client"`). `tradeId` accepts either the internal trade id or the `externalId` you supplied at creation. Another merchant's trade is treated as not found.
 
 **Authentication:** Merchant API Key (`api-key` header)
 **Scope:** `CORE_ACCESS`
@@ -15,7 +15,7 @@ GET https://api.assetpay.gg/secure/trades/wd_unique_789
 api-key: ap_...
 ```
 
-A single ref returns one [`Trade`](/reference/types#trade) object, or `404 TRADE_NOT_FOUND` if it doesn't resolve.
+A single ref returns one [`Trade`](/reference/types#trade) object, or `404 TRADE_NOT_FOUND` if it doesn't resolve. Duplicate refs are merged first, so `wd_1,wd_1` counts as a single ref: it returns one object and can 404.
 
 ```json
 {
@@ -47,7 +47,7 @@ A single ref returns one [`Trade`](/reference/types#trade) object, or `404 TRADE
 
 ## Fetching multiple (batch)
 
-Comma-separate up to **100** ids/externalIds to fetch several in one call — ideal for polling the status of multiple pending withdrawals without one request per trade.
+Comma-separate up to **100** ids/externalIds to fetch several in one call, which suits polling the status of multiple pending withdrawals without one request per trade.
 
 ```http
 GET https://api.assetpay.gg/secure/trades/wd_1,wd_2,wd_3
@@ -80,5 +80,5 @@ With more than one ref the `data` is an **array** of the trades that resolved. U
 
 | Code | Key | When |
 |------|-----|------|
-| 21 | `TRADE_NOT_FOUND` | A single ref doesn't resolve (not found, another merchant's trade, or a `client`-source trade). Batch requests omit unresolved refs instead of erroring. |
-| 1001 | `VALIDATION_FAILED` | More than 100 refs supplied in one request. |
+| 21 | `TRADE_NOT_FOUND` | A single ref doesn't resolve (not found, or another merchant's trade). Batch requests omit unresolved refs instead of erroring. |
+| 1001 | `VALIDATION_FAILED` | More than 100 distinct refs supplied in one request. HTTP 400. |

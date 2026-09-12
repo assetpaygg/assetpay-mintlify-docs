@@ -1,10 +1,10 @@
 ---
 title: "Get Search Suggestions"
-description: "Return lightweight autocomplete suggestions for your market search UI — far faster than running a full market query on every keystroke. Client token only."
+description: "Return lightweight autocomplete suggestions for your market search UI, far faster than running a full market query on every keystroke. Client token only."
 ---
 
 
-Returns lightweight search suggestions for building autocomplete in your market UI. Faster than a full market search.
+Returns lightweight search suggestions for building autocomplete in your market UI. Faster than a full market search. CS2 only.
 
 **Authentication:** Client Token (`Authorization` header)
 
@@ -28,12 +28,29 @@ Authorization: CLIENT_TOKEN
   "requestId": "...",
   "success": true,
   "data": [
-    "AWP | Dragon Lore (Factory New)",
-    "AWP | Dragon Lore (Minimal Wear)",
-    "AWP | Dragon Lore (Field-Tested)"
+    {
+      "id": "0010f8d48278ccb8",
+      "marketHashName": "AWP | Dragon Lore (Factory New)",
+      "iconUrl": "IzMF03bk9WpSBq-S-ekoE33L-iLqGFHVaU25ZzQNQcXdEHOQ6UFc5FT_0NqFMOBBN-s...",
+      "rarity": "Covert",
+      "itemType": "Sniper Rifle"
+    }
   ]
 }
 ```
+
+### Response Fields
+
+`data` is an array of suggestion objects:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Catalog item ID. Pass it as `itemId` to [`GET /client/market/item`](/api-reference/client/get-item-listings) to list every listing of the item. |
+| `marketHashName` | string | Market hash name of the item |
+| `iconUrl` | string | Item icon |
+| `rarity` | string | Rarity name (when known) |
+| `rarityColor` | string | Rarity color (when known) |
+| `itemType` | string | Item type (when known) |
 
 ## Rate Limits
 
@@ -41,3 +58,14 @@ Authorization: CLIENT_TOKEN
 |----------------|-------|
 | Verified | 600 requests / min |
 | Unverified | 30 requests / min |
+
+## Errors
+
+| Code | Key | When |
+|------|-----|------|
+| 3 | `INVENTORY_FETCH_FAILED` | Suggestions couldn't be loaded upstream (HTTP 424); retry shortly |
+| 1001 | `VALIDATION_FAILED` | `q` missing, empty or longer than 100 characters (HTTP 400, details in `error.fields`) |
+| 1005 | `RATE_LIMITED` | Rate limit exceeded (HTTP 429) |
+| 1007 | `SYSTEM_MAINTENANCE` | Service is in maintenance mode (HTTP 503) |
+| 1102 | `INVALID_TOKEN` | Client token is invalid or expired |
+| 1108 | `MISSING_BEARER` | No `Authorization` header |

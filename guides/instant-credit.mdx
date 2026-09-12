@@ -7,7 +7,7 @@ description: "How instant CS2 deposit credit works: the preCredit and pendingCre
 Steam enforces a 7-day trade protection period on CS2 trades. Without instant credit, your users would have to wait a full week before seeing their balance after depositing skins. The instant credit system solves this by advancing a portion of the deposit value immediately, backed by collateral.
 
 <Info>
-Rust trades have **no trade protection period**. Rust deposits are always credited instantly and in full, regardless of any settings described on this page.
+Rust trades have **no trade protection period**. Rust deposits are never split: they carry `preCredit` equal to `totalPrice` and `pendingCredit` `0`, and are credited in full when the trade reaches `completed` (right after the user accepts), regardless of any settings described on this page.
 </Info>
 
 ## How It Works
@@ -48,7 +48,7 @@ The total collateral available for a deposit is:
 availableCollateral = (providerCollateral + merchantCollateral) - activeExposure
 ```
 
-**Active exposure** is the sum of `preCredit` from all of the user's currently pending trades (trades in `initiated`, `active`, or `hold` status). This prevents a single user from leveraging the same collateral pool across many simultaneous deposits.
+**Active exposure** is the sum of `preCredit` from all of the user's currently pending trades (trades in `initiated`, `pending`, `active`, or `hold` status). This prevents a single user from leveraging the same collateral pool across many simultaneous deposits.
 
 ## What Determines Collateral
 
@@ -139,17 +139,17 @@ Your callback handler should credit the user in two stages:
 |----------------|--------|
 | `hold` | Credit the `preCredit` amount to the user's balance |
 | `completed` | Credit the `pendingCredit` amount (the remainder) |
-| `reverted` | Reverse the `preCredit` amount that was already credited |
+| `reverted` | Reverse only what you have already credited: `preCredit` during `hold`, `preCredit` + `pendingCredit` after `completed` |
 
-If `isInstant` was `false` or the user had zero collateral, `preCredit` will be `0` and the full amount arrives on `completed`.
+On CS2, if `isInstant` was `false` or the user had zero collateral, `preCredit` will be `0` and the full amount arrives on `completed`. Rust has no `hold`, so a Rust deposit's `preCredit` equals `totalPrice` and nothing is credited before `completed`: credit `totalPrice` there.
 
 <Warning>
-Always handle `reverted` callbacks. If a trade is reversed during the hold period, you must deduct the instant credit that was already given. Failing to handle reversals creates a balance discrepancy.
+Always handle `reverted` callbacks. A deposit is normally reversed during the hold period (reverse only the `preCredit` already given; `pendingCredit` was never credited), but it can also be reversed after `completed` (reverse both `preCredit` and `pendingCredit`). Failing to handle reversals creates a balance discrepancy.
 </Warning>
 
 ## Trust and Reversals
 
-Reversals carry real consequences. When a deposit is reverted:
+Reversals carry real consequences. When a CS2 deposit is reverted:
 
 1. The user's trust factor takes a penalty proportional to the reverted value
 2. Their deposit history counters are reduced

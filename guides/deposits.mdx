@@ -19,7 +19,7 @@ A deposit is when a user sells their skin to your platform. The user sends their
     Call `POST /client/trading/deposit` with the selected items and their offer prices.
   </Step>
   <Step title="Trade offer sent">
-    AssetPay sends a Steam trade offer to the user. The trade moves to `active` — sitting in the user's Steam inbox awaiting acceptance.
+    AssetPay creates a Steam trade offer for the user. The trade may pass through `pending` while the bot confirms the offer, then moves to `active`, sitting in the user's Steam inbox awaiting acceptance.
   </Step>
   <Step title="User accepts">
     The user accepts the trade offer in Steam. The trade moves to `hold`.
@@ -67,11 +67,9 @@ Authorization: CLIENT_TOKEN
 }
 ```
 
-For Rust items that are stackable, you can specify an `amount`:
+`amount` defaults to `1`. Rust items and items routed to a deposit provider only accept `amount: 1`; a larger amount is rejected with `EXCEEDS_MAX_AMOUNT`.
 
-```json
-{ "itemId": "...", "price": 0.15, "amount": 3 }
-```
+A basket can be split into several trades internally (for example when some items are routed to a deposit provider). Each trade gets its own Steam offer and callbacks; the response is the largest trade, with the others in `relatedTrades[]`, and only that primary trade carries your `externalId`. See [Split baskets](/api-reference/trading/deposit#split-baskets).
 
 ## Request Fields
 
@@ -80,10 +78,10 @@ For Rust items that are stackable, you can specify an `amount`:
 | `items` | array | Yes | Array of items to deposit (min 1, max 250) |
 | `items[].itemId` | string | Yes | Item ID from the inventory response |
 | `items[].price` | number | Yes | Offer price in USD. Must match the current offer price returned by `/client/inventory`. |
-| `items[].amount` | number | No | Quantity for stackable items (default: 1, max: 10000) |
+| `items[].amount` | number | No | Quantity from a stacked inventory row (default: 1, max: 10000). Must be `1` for Rust and provider-routed items. |
 | `game` | string | No | `"730"` (CS2) or `"252490"` (Rust). Defaults to `"730"`. |
 | `externalId` | string | No | Your unique tracking ID (max 128 chars). Stored as `externalId` on the trade. |
-| `isInstant` | boolean | No | Whether to request instant credit (default `false`). |
+| `isInstant` | boolean | No | CS2 only. Whether to request instant credit (default `false`). Rust deposits are always credited in full on `completed`. |
 
 ## Rate Limits
 
@@ -91,8 +89,8 @@ Two layers apply to `/client/trading/deposit`:
 
 - **Per-merchant tier throttle** (shared across all clients): 500 req/min verified, 5 req/min unverified.
 - **Per-client guard** (scoped per merchant + client Steam ID):
-  - Max **5 concurrent active deposits** (not-yet-accepted: `initiated | active`) — `TOO_MANY_ACTIVE_TRADES` (HTTP 429).
-  - Max **10 deposits per 5-minute rolling window** — `RATE_LIMITED` (HTTP 429).
+  - Max **5 concurrent active deposits** (not-yet-accepted: `initiated | pending | active`), rejected with `TOO_MANY_ACTIVE_TRADES` (HTTP 429).
+  - Max **10 deposits per 5-minute rolling window**, rejected with `RATE_LIMITED` (HTTP 429).
 
 These guard against runaway behavior on a single user. They run before pricing/inventory fetches, so a rate-limited request fails fast and cheap.
 
@@ -117,7 +115,10 @@ The response contains the full trade object:
     "clientTradeUrl": "https://steamcommunity.com/tradeoffer/new/?partner=...",
     "items": [...],
     "totalPrice": 10.75,
+    "preCredit": 8.60,
+    "pendingCredit": 2.15,
     "isInstant": true,
+    "collateral": { "merchant": 0, "provider": 150.00 },
     "createdAt": "2026-03-04T10:00:00.000Z",
     "updatedAt": "2026-03-04T10:00:00.000Z"
   }
@@ -126,13 +127,15 @@ The response contains the full trade object:
 
 ## Instant Deposits
 
-`isInstant` defaults to `false`, so a deposit is fully held unless you ask for instant credit. Sending `isInstant: true` fails with `INSTANT_DEPOSITS_DISABLED` if instant deposits are off for your account. When instant credit applies, AssetPay calculates how much of the deposit value can be credited instantly based on collateral, rather than waiting for the full 7-day hold period.
+`isInstant` defaults to `false`, so a CS2 deposit is fully held unless you ask for instant credit. Sending `isInstant: true` fails with `INSTANT_DEPOSITS_DISABLED` if instant deposits are off for your account. When instant credit applies, AssetPay calculates how much of the deposit value can be credited instantly based on collateral, rather than waiting for the full 7-day hold period. Rust deposits are never split: they carry `preCredit` equal to `totalPrice` and `pendingCredit` `0`, and are credited in full on `completed`.
 
-When a deposit enters `hold` status, the trade object includes:
+The split is decided when the deposit is created, so the creation response already includes:
 
-- `preCredit` - the amount credited instantly (USD)
+- `preCredit` - the amount credited instantly (USD) once the trade enters `hold`
 - `pendingCredit` - the remaining amount held until the hold period ends
 - `collateral` - breakdown of collateral sources
+
+Callbacks carry `preCredit` from the start and `pendingCredit` once the trade enters `hold` (on Rust, once it reaches `completed`). `collateral` is only on the creation response; callbacks never include it.
 
 If `isInstant` is `false` or omitted, the entire amount waits until `completed`.
 
@@ -152,16 +155,17 @@ External IDs must be unique per trade. Reusing an ID will result in an `EXTERNAL
 
 | Event | Action |
 |-------|--------|
-| `hold` | Credit `preCredit` amount (if using instant deposits) |
-| `completed` | Credit `pendingCredit` (the remaining held amount) |
-| `reverted` | Reverse any instant credit that was applied |
+| `hold` | CS2: credit `preCredit` amount (if using instant deposits) |
+| `completed` | CS2: credit `pendingCredit` (the remaining held amount). Rust: credit `totalPrice`, since there was no `hold` |
+| `reverted` | Reverse only what you have already credited: `preCredit` if the trade is reverted during `hold` (the normal case), `preCredit` + `pendingCredit` if it is reverted after `completed` |
 
 **When NOT to credit:**
 
 | Event | Action |
 |-------|--------|
 | `initiated` | Just acknowledge |
-| `active` | Just acknowledge — Steam offer sent, awaiting user acceptance |
+| `pending` | Just acknowledge. Offer created, bot confirmation pending |
+| `active` | Just acknowledge. Steam offer sent, awaiting user acceptance |
 | `failed` | No credit needed |
 | `canceled` | No credit needed |
 | `declined` | No credit needed (user declined the offer) |

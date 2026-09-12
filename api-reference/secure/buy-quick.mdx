@@ -3,7 +3,7 @@ title: "Quick Buy (Self-Trade)"
 description: "Merchant-side quick buy: pass an itemId, a per-unit price ceiling and an amount, and AssetPay buys the cheapest listings up to it. Available for CS2 and Rust."
 ---
 
-Merchant-facing equivalent of [`POST /client/trading/withdraw/quick`](/api-reference/trading/withdraw-quick). Instead of naming specific listings, you pass an `itemId`, a per-unit ceiling, and an amount — AssetPay buys the cheapest available listings at or below your ceiling and delivers them to the supplied `tradeUrl`. The merchant's USD wallet is debited.
+Merchant-facing equivalent of [`POST /client/trading/withdraw/quick`](/api-reference/trading/withdraw-quick). Instead of naming specific listings, you pass an `itemId`, a per-unit ceiling, and an amount, and AssetPay buys the cheapest available listings at or below your ceiling and delivers them to the supplied `tradeUrl`. The merchant's USD wallet is debited.
 
 **Available for CS2 and Rust.** Other games are rejected with `QUICK_BUY_UNSUPPORTED_GAME` (32). For Rust, `phase` and `delivery: "instant"` are not available (CS2-only options).
 
@@ -34,20 +34,20 @@ api-key: ap_...
 | `tradeUrl` | string | Yes | Steam trade URL of the account receiving the items |
 | `itemId` | string | Yes\* | Item id from `/secure/prices` (CS2 catalog id, or any listing id of the item for Rust). 5–256 chars. Provide this **or** `marketHashName`; `itemId` wins when both are sent. |
 | `marketHashName` | string | Yes\* | Exact market hash name (e.g. `AK-47 \| Redline (Field-Tested)`), resolved to the item. Ignored when `itemId` is supplied. |
-| `maxPrice` | number | Yes | **Gross** per-unit price ceiling in USD (fee-inclusive — same basis as the `withdraw` price in `/secure/prices`). Max $100,000. |
+| `maxPrice` | number | Yes | **Gross** per-unit price ceiling in USD (fee-inclusive, the same basis as the `withdraw` price in `/secure/prices`). Max $100,000. |
 | `amount` | number | Yes | How many units to buy. Integer, 1–200. |
-| `externalIds` | array | No | One reference of your own per requested unit (each 1–128 chars), applied to the pre-filled rows in order. Must hold **exactly** `amount` entries. Accepted in place of the item id by both [cancel](/api-reference/secure/cancel-buy-item) endpoints. |
-| `delivery` | string | No | `"standard"` or `"instant"`. Defaults to `"standard"`. `"instant"` is CS2-only. |
-| `phase` | string | No | **CS2 only.** Doppler phase to buy: `"Phase 1"`–`"Phase 4"`, `"Ruby"`, `"Sapphire"`, `"Black Pearl"`, `"Emerald"`. Prices against that phase's floor for the requested delivery mode. Combines with `delivery: "instant"`, though many phases have no instant listing — check `phases[].withdraw.instant` on /secure/prices first. |
+| `externalIds` | array | No | One reference of your own per requested unit (each 1–128 chars), applied to the pre-filled rows in order. Must hold **exactly** `amount` entries, all unique. Accepted in place of the item id by both [cancel](/api-reference/secure/cancel-buy-item) endpoints. |
+| `delivery` | string | No | `"standard"` or `"instant"`. Defaults to `"standard"`. `"instant"` is CS2-only, and AssetPay may downgrade it to `"standard"` when instant quick buys are unavailable; `offer.delivery` on the returned rows shows what was applied. |
+| `phase` | string | No | **CS2 only.** Doppler phase to buy: `"Phase 1"`–`"Phase 4"`, `"Ruby"`, `"Sapphire"`, `"Black Pearl"`, `"Emerald"`. Prices against that phase's floor for the requested delivery mode. Combines with `delivery: "instant"`, though many phases have no instant listing, so check `phases[].withdraw.instant` on /secure/prices first. |
 | `game` | string | No | `"730"` (CS2) or `"252490"` (Rust). Defaults to `"730"`. |
 | `autoCancel` | number | No | **CS2 only.** Minutes after creation to automatically cancel any unit still undelivered. Integer, 30-720. Defaults to `30`; send `720` to disable. Rejected on Rust with `VALIDATION_FAILED`. See [Automatic cancellation](/guides/withdrawals#automatic-cancellation). |
-| `externalId` | string | No | Your unique tracking ID |
+| `externalId` | string | No | Your unique tracking ID (max 128 chars) |
 
 \* Provide either `itemId` or `marketHashName`.
 
 ## Response
 
-Returns a full [`Trade`](/reference/types#trade) object with `source: "self"`. As with the client quick withdrawal, `items` contains **one pre-filled row per requested unit** (carrying the ceiling `price` + `delivery`, same minimal shape as a standard buy item) and `totalPrice` is the **worst-case lock** (`amount × maxPrice`). Each row is bound to a real listing as fills arrive; unfilled rows go to `failed` and the unfilled / below-ceiling remainder is refunded — all asynchronously via the trade webhook. Once settled, `totalPrice` reflects the actual spend.
+Returns a full [`Trade`](/reference/types#trade) object with `source: "self"`. As with the client quick withdrawal, `items` contains **one pre-filled row per requested unit** (carrying the ceiling `price` + `delivery`, same minimal shape as a standard buy item) and `totalPrice` is the **worst-case lock** (`amount × maxPrice`). Each row is bound to a real listing as fills arrive; unfilled rows go to `failed` and the unfilled / below-ceiling remainder is refunded, all asynchronously via the trade webhook. Once settled, `totalPrice` reflects the actual spend. On Rust the pre-filled rows also carry `name`, `marketHashName`, `type` and `iconUrl`.
 
 ```json
 {
@@ -81,11 +81,11 @@ The merchant's available wallet balance must cover the worst-case lock (`amount 
 
 ## The `initiated` approval callback also fires
 
-`/secure/buy/quick` reuses the same approval pipeline as the client quick withdrawal. After the trade is created (status `initiated`), AssetPay sends an [approval callback](/guides/callbacks#the-initiated-callback-for-withdrawals) with `trade.source === "self"`. The trade does not proceed until you respond — note the callback carries the **pre-filled rows** (each at the ceiling price) and the worst-case `totalPrice`, since the actual fills aren't known yet.
+`/secure/buy/quick` reuses the same approval pipeline as the client quick withdrawal. After the trade is created (status `initiated`), AssetPay sends an [approval callback](/guides/callbacks#the-initiated-callback-for-withdrawals) with `trade.source === "self"`. The trade does not proceed until you respond. Note that the callback carries the **pre-filled rows** (each at the ceiling price) and the worst-case `totalPrice`, since the actual fills aren't known yet.
 
 - To auto-approve your own self-trades, return `2xx` whenever `trade.source === "self"`.
 - To reject, respond with `4xx`; the trade is failed and the wallet lock is released.
-- Self-trade quick buys still **require an active callback URL** — without one the call fails immediately with `MERCHANT_NO_CALLBACK_URL` (1705).
+- Self-trade quick buys still **require an active callback URL and an API secret**. The call fails immediately with `MERCHANT_NO_CALLBACK_URL` (1705) without a callback URL, `MERCHANT_CALLBACK_URL_DISABLED` (1706) when it has been disabled, and `MERCHANT_NO_API_SECRET` (1707) without an API secret.
 
 ## Rate Limits
 
@@ -96,4 +96,19 @@ The merchant's available wallet balance must cover the worst-case lock (`amount 
 
 ## Errors
 
-Same set as [`POST /client/trading/withdraw/quick`](/api-reference/trading/withdraw-quick#errors). Common: `QUICK_BUY_UNSUPPORTED_GAME` (32, unsupported game), `MERCHANT_BALANCE_LOW` (12), `MERCHANT_NO_CALLBACK_URL` (1705), `INVALID_TRADEURL` (13), `INSUFFICIENT_STOCK` (42, Rust: nothing sourceable at or below `maxPrice`), `VALIDATION_FAILED` (1001).
+Same set as [`POST /client/trading/withdraw/quick`](/api-reference/trading/withdraw-quick#errors). The ones you are most likely to see:
+
+| Code | Key | When |
+|------|-----|------|
+| 1 | `EXTERNAL_ID_EXISTS` | `externalId` is already used by another of your trades |
+| 12 | `MERCHANT_BALANCE_LOW` | Your available balance does not cover `amount × maxPrice` |
+| 14 | `LISTING_NOT_FOUND` | Rust: no listing matches `itemId` or `marketHashName` |
+| 20 | `WITHDRAW_IN_PROGRESS` | Another buy for the same Steam account is still being created. Retryable: sent with `retry-after: 1` |
+| 32 | `QUICK_BUY_UNSUPPORTED_GAME` | `game` is neither CS2 nor Rust |
+| 42 | `INSUFFICIENT_STOCK` | Rust: nothing sourceable at or below `maxPrice` |
+| 1001 | `VALIDATION_FAILED` | The body failed validation, including a malformed `tradeUrl`. HTTP 400, see `error.fields` |
+| 1015 | `WITHDRAWALS_PAUSED` | Withdrawals for this game are temporarily paused |
+| 1601 | `INVALID_AMOUNT` | `maxPrice` leaves nothing to buy with once the fee is taken out |
+| 1705 | `MERCHANT_NO_CALLBACK_URL` | No active callback URL on the account |
+| 1706 | `MERCHANT_CALLBACK_URL_DISABLED` | Your callback URL has been disabled |
+| 1707 | `MERCHANT_NO_API_SECRET` | No active API secret on the account |

@@ -76,7 +76,9 @@ See [List Wallet Transactions](/api-reference/ledger/list-transactions#response)
 | Code | Key | When |
 |------|-----|------|
 | 1003 | `NOT_FOUND` | No funding with this id belongs to your merchant account |
-| 1900 | `MISSING_API_KEY` | No `api-key` header was sent |
+| 1100 | `UNAUTHORIZED` | Neither an `api-key` header nor a `Bearer` `Authorization` header was sent (HTTP 401) |
+| 1300 | `MERCHANT_API_KEY_REQUIRED` | An admin API key was used; this route needs a merchant key (HTTP 403) |
+| 1301 | `ACCOUNT_DISABLED` | The account that owns the API key is not active (HTTP 403) |
 | 1901 | `INVALID_API_KEY` | The key does not exist or was revoked |
 | 1904 | `API_KEY_IP_DENIED` | The request IP is not in the key's whitelist |
 | 1908 | `INSUFFICIENT_SCOPE` | The key does not have the `LEDGER_READ` scope |

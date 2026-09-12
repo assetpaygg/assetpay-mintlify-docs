@@ -18,10 +18,11 @@ Authorization: CLIENT_TOKEN
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `game` | string | `730` | Game app ID (`"730"` = CS2, `"252490"` = Rust) |
-| `refresh` | boolean | `false` | Force-refresh from Steam (bypasses 15-min cache) |
-| `search` | string | - | Filter by item name (max 100 chars) |
-| `sort` | string | - | `relevance`, `priceAsc`, `priceDesc`, `nameAsc`, or `nameDesc` |
+| `game` | integer | `730` | Game app ID (`730` = CS2, `252490` = Rust). Must be a positive integer. |
+| `refresh` | boolean | `false` | Force-refresh from Steam (bypasses 15-min cache). Only `true` or `false` are accepted. |
+| `acceptedOnly` | boolean | `false` | Return only items with `offer.accepted = true`. Applied before search, price filters, sorting and pagination, so `count` reflects it. Only `true` or `false` are accepted. |
+| `search` | string | - | Filter by item name |
+| `sort` | string | - | `relevance`, `priceAsc`, `priceDesc`, `nameAsc`, or `nameDesc`. Any other value is ignored. |
 | `minPrice` | number | - | Minimum offer price (USD) |
 | `maxPrice` | number | - | Maximum offer price (USD) |
 | `page` | number | `1` | Page number |
@@ -37,6 +38,7 @@ Authorization: CLIENT_TOKEN
     "inventory": [
       {
         "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "assetId": "38912345678",
         "name": "AK-47 | Redline",
         "marketHashName": "AK-47 | Redline (Field-Tested)",
         "type": "Rifle",
@@ -46,15 +48,14 @@ Authorization: CLIENT_TOKEN
         "marketPrice": 12.50,
         "offer": {
           "price": 10.75,
-          "accepted": true,
-          "maxAmount": 1
+          "accepted": true
         },
         "exterior": "Field-Tested",
         "wear": "0.25432",
         "rarity": "Classified",
         "color": "#D32CE6",
         "paintSeed": 312,
-        "propId": "S76561198012345678A12345678D8888888888888888888",
+        "previewToken": "0E1E9FBCF4F1CF0F162A2E6D260F3E0A36929AF6FE0D4EE20D66137E166CF38CAD",
         "stickers": [
           {
             "name": "Natus Vincere | Katowice 2019",
@@ -86,10 +87,14 @@ Authorization: CLIENT_TOKEN
 
 | Field | Description |
 |-------|-------------|
+| `assetId` | Steam asset ID of the item in the user's inventory. Always present. |
 | `offer.price` | What the user gets paid for depositing (USD) |
-| `offer.accepted` | `true` if the item can be deposited |
-| `marketPrice` | Market reference price (USD). Not the trade price. |
-| `propId` | Steam inspect-link asset certificate for CS2 items (when available) |
+| `offer.accepted` | `true` if the item can be deposited. Items with no quote, or whose stock is full, come back as `accepted: false` with `price: 0`. |
+| `offer.maxAmount` | Rust only. A single Rust item carries the offer's stock limit when it has one; stacked Rust assets (`amount` above 1) are capped at `1` per deposit. CS2 items don't carry it. |
+| `marketPrice` | Reference price (USD), not the trade price. On CS2 it is a market reference quote; on Rust it is `offer.price` rounded up. |
+| `previewToken` | CS2 inspect preview token (when available) |
+| `doppler` | CS2 Doppler items only: `{ name, paintIndex }`, e.g. `{ "name": "Ruby", "paintIndex": 415 }` |
+| `charm` | CS2 items with an attached charm: `{ name, marketHashName, iconUrl }` |
 | `stickers[].marketHashName` | Market hash name of the applied sticker, for deep-linking to the sticker's own market page |
 
 ## Rate Limits
@@ -104,9 +109,17 @@ Authorization: CLIENT_TOKEN
 | Code | Key | When |
 |------|-----|------|
 | 3 | `INVENTORY_FETCH_FAILED` | Steam inventory couldn't be loaded |
-| 7 | `USER_NOT_TRADEABLE` | Steam returned 403 — inventory private or account can't trade |
+| 7 | `USER_NOT_TRADEABLE` | Steam reports the account can't trade |
+| 13 | `INVALID_TRADEURL` | Steam rejected the trade URL carried in the client token |
+| 29 | `ESCROW_NOT_ALLOWED` | The account is under a Steam trade hold (escrow) |
+| 30 | `INVENTORY_PRIVATE` | The user's Steam inventory is private |
 | 31 | `STEAM_UNAVAILABLE` | Steam temporarily couldn't serve the request; retry shortly |
 | 33 | `STEAM_RATE_LIMITED` | Steam is rate-limiting inventory reads; retry shortly |
-| 1010 | `NO_BOTS_AVAILABLE` | No Steam bots online; retry shortly |
-| 1011 | `FLEET_DEGRADED` | Steam fleet degraded; retry shortly |
+| 1001 | `VALIDATION_FAILED` | Invalid query parameter (HTTP 400, details in `error.fields`) |
+| 1005 | `RATE_LIMITED` | Rate limit exceeded (HTTP 429) |
+| 1007 | `SYSTEM_MAINTENANCE` | Service is in maintenance mode (HTTP 503) |
+| 1011 | `FLEET_DEGRADED` | No Steam bot can read inventories right now (HTTP 503 with `Retry-After: 30`); retry after that delay |
+| 1014 | `DEPOSITS_PAUSED` | Deposits for this game are paused, or CS2 deposit pricing is unavailable (HTTP 503) |
 | 1102 | `INVALID_TOKEN` | Client token is invalid or expired |
+| 1108 | `MISSING_BEARER` | No `Authorization` header |
+| 1310 | `USER_NOT_FOUND` | Steam couldn't find the user behind the trade URL (HTTP 404) |

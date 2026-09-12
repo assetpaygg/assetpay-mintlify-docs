@@ -65,10 +65,10 @@ Response:
 }
 ```
 
-Open `captureUrl` in the user's browser. After they complete the capture, they'll be redirected back to your site.
+Open `captureUrl` in the user's browser. After they complete the capture, they are redirected to AssetPay's own `/verification/complete` page, not to your site, so poll the status endpoint to learn the result.
 
 <Warning>
-Only one verification process can be active at a time per user. If a process was started within the last 30 minutes, you'll get a `VERIFICATION_IN_PROGRESS` error. Wait for it to complete or expire before starting a new one.
+Only one verification process can be active at a time per user. If a process started within the last 30 minutes still has no result (`CREATED`), you'll get a `VERIFICATION_IN_PROGRESS` error. Wait for it to finish, or for 30 minutes to pass since it started, before starting a new one.
 </Warning>
 
 ## Checking Status
@@ -112,13 +112,12 @@ Response:
 
 | Status | Meaning |
 |--------|---------|
-| `CREATED` | Verification started, capture URL generated |
-| `CAPTURE_PENDING` | User is in the capture flow |
-| `PROCESSING` | Document and selfie are being analyzed |
+| `CREATED` | Verification started, capture URL generated, no result yet. An abandoned process stays `CREATED` |
 | `ACCEPTED` | Verification successful, user is now level 1 |
-| `REJECTED` | Document or selfie failed validation |
+| `REJECTED` | Document or selfie failed validation, or the identity is banned |
 | `ERROR` | Something went wrong during processing |
-| `EXPIRED` | Process was not completed within 30 minutes |
+
+`latestProcess` shows the `ACCEPTED` process when there is one, even if a later attempt exists.
 
 Once `verificationLevel` is `1`, the user's instant credit cap is raised immediately. No further action needed on your side.
 
@@ -129,7 +128,7 @@ Some users have multiple Steam accounts. Identity verification supports linking 
 ### How It Works
 
 1. User verifies on their primary account (document + selfie)
-2. On a second account, you call `POST /client/verification/start` with the same email address
+2. On a second account, you call `POST /client/verification/start` with the same email address. This stores the email, but it also starts a new verification process on that account, which blocks another `/start` for 30 minutes
 3. Then call `POST /client/verification/link` to link the second account to the existing verified identity
 
 ```http
@@ -147,7 +146,7 @@ Each identity has a maximum number of linked accounts (default: 10). If a user t
 
 Identity linking is not just a convenience feature. It's also a security mechanism.
 
-When accounts are linked to the same identity, **trust penalties cascade across all of them**. If one linked account gets a deposit reversal (fraud, chargeback, or cancelled trade), the trust factor is destroyed on every account tied to that identity.
+When accounts are linked to the same identity, **trust penalties cascade across all of them**. If one linked account has a CS2 deposit reversed, the trust factor is destroyed on every account tied to that identity.
 
 This means:
 - A user can't create multiple Steam accounts to bypass trust penalties
@@ -168,18 +167,14 @@ AssetPay takes privacy seriously in the verification flow:
 
 | Code | Key | When |
 |------|-----|------|
-| 2300 | `VERIFICATION_NOT_AVAILABLE` | Verification is not enabled yet |
-| 2301 | `VERIFICATION_ALREADY_VERIFIED` | Account is already at level 1 |
-| 2302 | `VERIFICATION_IN_PROGRESS` | Active process exists (wait 30 min or complete it) |
-| 2303 | `VERIFICATION_PROCESS_NOT_FOUND` | Verification process not found |
-| 2304 | `VERIFICATION_BANNED_IDENTITY` | This identity has been banned |
-| 2305 | `VERIFICATION_ACCOUNT_CAP_REACHED` | Too many accounts linked to this identity |
-| 2306 | `VERIFICATION_ALREADY_LINKED` | Account is already linked to an identity |
-| 2307 | `VERIFICATION_IDENTITY_NOT_FOUND` | Verified identity not found (admin lookup paths) |
-| 2308 | `VERIFICATION_SIGNICAT_ERROR` | Verification provider returned an error |
-| 2310 | `VERIFICATION_EMAIL_REQUIRED` | Email is needed for linking (pass it in `/start`) |
-| 2311 | `VERIFICATION_NOT_LINKED` | Account does not have a linked identity |
-| 2312 | `VERIFICATION_LINK_FAILED` | No matching identity, identity banned, or generic link failure |
+| 2300 | `VERIFICATION_NOT_AVAILABLE` | Verification is not enabled yet (HTTP 503) |
+| 2301 | `VERIFICATION_ALREADY_VERIFIED` | Account is already at level 1 (HTTP 400) |
+| 2302 | `VERIFICATION_IN_PROGRESS` | A process started in the last 30 minutes has no result yet (HTTP 400) |
+| 2305 | `VERIFICATION_ACCOUNT_CAP_REACHED` | Too many accounts linked to this identity (HTTP 400) |
+| 2310 | `VERIFICATION_EMAIL_REQUIRED` | Email is needed for linking (pass it in `/start`) (HTTP 400) |
+| 2312 | `VERIFICATION_LINK_FAILED` | No identity matches the email, or the identity is banned (HTTP 400) |
+
+A banned identity is not an error on `/start`: the capture completes and the process ends `REJECTED`.
 
 ## Integration Checklist
 

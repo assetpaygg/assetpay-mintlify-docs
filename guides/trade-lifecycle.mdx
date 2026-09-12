@@ -9,18 +9,18 @@ Every trade follows a state machine. Understanding the status transitions is cri
 
 | Status | Description |
 |--------|-------------|
-| `initiated` | Trade created. For deposits, the Steam offer has not been sent yet. For withdrawals, this is the approval gate — the merchant wallet has not been debited yet. |
-| `pending` | **Withdrawals only.** The supplier is sourcing the item / creating the purchase. |
-| `active` | Steam trade offer has been sent to the user — awaiting their acceptance. |
+| `initiated` | Trade created. For deposits, the Steam offer has not been sent yet. For withdrawals, this is the approval gate: `totalPrice` is already locked from your merchant balance, and nothing has been purchased yet. |
+| `pending` | **Deposits:** the Steam offer exists but the sending bot has not confirmed it yet (often skipped). **Withdrawals:** the supplier is sourcing the item / creating the purchase. |
+| `active` | Steam trade offer has been sent to the user and is awaiting their acceptance. |
 | `hold` | User accepted and the items are in Steam's hold window (typically 7 days). Carries `offerID` and `holdEndDate`. |
 | `completed` | Trade finished successfully (hold expired with no reversal). |
-| `canceled` | Trade was canceled before completion — admin/user cancel, or a deposit offer that was auto-canceled after sitting unaccepted past its window. |
-| `declined` | The end user actively declined (or let expire) the Steam trade offer. **Deposits:** no items received, no credit. **Withdrawals:** delivery didn't happen; your merchant wallet is refunded **minus a 2% buyer-decline penalty** (capped at $9). |
+| `canceled` | Trade was canceled before completion: admin/user cancel, or a deposit offer that was auto-canceled after sitting unaccepted past its window. |
+| `declined` | The end user actively declined (or let expire) the Steam trade offer. **Deposits:** no items received, no credit. **Withdrawals (CS2 only):** delivery didn't happen. Items AssetPay fills from its own stock are refunded in full; items bought from a marketplace are refunded **minus the penalty the marketplace kept** for the decline. A declined Rust offer ends as `failed`. |
 | `failed` | Trade failed at some point in the process (offer expired, merchant rejected the `initiated` callback, supplier purchase failed, error). |
 | `reverted` | The trade was reversed by Steam, the upstream supplier or the end user (see `revertedBy`). Normally reached from `hold`, while the reversal window is still open. |
 
 <Note>
-There is no `partial` status. `pending` and `active` **are** emitted on withdrawals as the supplier sources the item and the Steam offer is sent. Statuses are atomic per trade — for multi-item withdrawals, each item carries its own status field but the trade-level status is always one of the values above.
+There is no `partial` status. `pending` and `active` **are** emitted on withdrawals as the supplier sources the item and the Steam offer is sent, and deposits can emit `pending` too. Statuses are atomic per trade: for multi-item withdrawals, each item carries its own status field but the trade-level status is always one of the values above.
 </Note>
 
 ## Deposit Status Flow
@@ -28,8 +28,13 @@ There is no `partial` status. `pending` and `active` **are** emitted on withdraw
 ```
 initiated
     │
-    ├──► canceled        (canceled before offer sent)
+    ├──► failed / canceled / declined   (before the offer reached the user)
     │
+    ├──► pending ──► failed / canceled / declined
+    │       │
+    │       ├──► hold / completed       (accepted before active was recorded)
+    │       │
+    │       ▼
     ▼
 active ──────────► failed   (offer expired / account restricted)
     │       │
@@ -49,14 +54,19 @@ completed
 
 ### What triggers each transition:
 
-- **initiated → active**: Steam trade offer **sent to the user** — sitting in their Steam inbox, awaiting acceptance
+- **initiated → pending**: The Steam offer was created and is waiting for the sending bot's confirmation
+- **initiated → active**: Steam trade offer **sent to the user**, sitting in their Steam inbox, awaiting acceptance
 - **initiated → failed / canceled**: Bot dispatch failed or the trade was canceled before the offer left
+- **initiated → declined**: The offer was declined before `active` was recorded
+- **pending → active**: The bot confirmed the offer; it is now in the user's Steam inbox
+- **pending → hold / completed**: The user accepted before `active` was recorded (`completed` directly for Rust)
+- **pending → failed / canceled / declined**: The unconfirmed offer failed, was canceled, or was declined
 - **active → hold**: User accepted, items received, Steam hold period started
 - **active → failed**: Trade offer expired or the user's account has restrictions
 - **active → declined**: User actively declined the Steam trade offer
 - **active → canceled**: Offer auto-canceled after sitting unaccepted past its window, or an admin/user canceled it
 - **hold → completed**: 7-day hold ended with no reversal, plus a short settlement buffer
-- **hold → reverted**: Items were clawed back during the hold window — **this is where a reversal normally happens** (check `revertedBy`)
+- **hold → reverted**: Items were clawed back during the hold window. **This is where a reversal normally happens** (check `revertedBy`)
 - **hold → failed**: Steam reported the trade as failed during the hold
 - **completed → reverted**: A late reversal reported after the hold already settled (uncommon; check `revertedBy`)
 
@@ -65,7 +75,7 @@ completed
 </Note>
 
 <Note>
-A reversal lands **during** `hold`, not after `completed`. `completed` is only entered once the hold window has passed *and* a short settlement buffer on top, because Steam can still roll a trade back right up to settlement. A `completed → reverted` edge exists for a late reversal reported after that point, but it is rare — build for `hold → reverted`.
+A reversal lands **during** `hold`, not after `completed`. `completed` is only entered once the hold window has passed *and* a short settlement buffer on top, because Steam can still roll a trade back right up to settlement. A `completed → reverted` edge exists for a late reversal reported after that point, but it is rare, so build for `hold → reverted`.
 </Note>
 
 <Note>
@@ -83,6 +93,7 @@ initiated
     │
     ▼
 pending ──────► failed   (supplier purchase failed)
+    │       └──► canceled (item cancel or auto-cancel before the offer was sent)
     │
     ▼
 active ───────► failed     (Steam offer expired / account restricted)
@@ -100,10 +111,11 @@ completed
 ### What triggers each transition:
 
 - **initiated → pending**: Merchant approved via the `initiated` callback; AssetPay starts sourcing the item from the supplier
-- **initiated → failed**: Merchant rejected via callback (4xx response or rejection body), the merchant has no callback URL configured (`MERCHANT_NO_CALLBACK_URL`), or the supplier purchase failed
+- **initiated → failed**: Merchant rejected via callback (4xx response or rejection body), the approval callback got no answer after 3 attempts (`APPROVAL_TIMEOUT`), the callback URL or API secret was removed after the trade was created, or the supplier purchase failed. A merchant with no usable callback URL or API secret at request time gets an HTTP error instead (`MERCHANT_NO_CALLBACK_URL`, `MERCHANT_CALLBACK_URL_DISABLED`, `MERCHANT_NO_API_SECRET`) and no trade is created
 - **initiated → canceled**: Trade explicitly canceled before processing
-- **pending → active**: Item sourced, **Steam trade offer sent to the user** — awaiting acceptance
+- **pending → active**: Item sourced, **Steam trade offer sent to the user**, awaiting acceptance
 - **pending → failed**: Supplier purchase could not be completed
+- **pending → canceled**: The item was canceled (manually or by auto-cancel) before the offer was sent
 - **active → hold**: User accepted the Steam trade offer, Steam hold period started
 - **active → failed**: The Steam offer expired or the recipient's account is restricted
 - **active → declined**: The end user actively declined the Steam offer (your merchant wallet is refunded)
@@ -136,9 +148,9 @@ When a deposit enters `hold`, the trade includes:
 - `preCredit`: amount to credit immediately (calculated from collateral)
 - `pendingCredit`: remaining amount to credit after the hold
 
-Credit `preCredit` on `hold`, then credit `pendingCredit` on `completed`. If the trade gets `reverted`, reverse both.
+Credit `preCredit` on `hold`, then credit `pendingCredit` on `completed`. If the trade gets `reverted`, reverse only what you have already credited: `preCredit` if it is reverted during `hold` (the normal case), both if it is reverted after `completed`.
 
-Rust deposits skip the hold entirely — credit the full amount on `completed`.
+Rust deposits skip the hold entirely: a Rust trade carries `preCredit` equal to `totalPrice` and `pendingCredit` `0`, so credit `totalPrice` on `completed`.
 
 ## Terminal States
 
@@ -146,7 +158,7 @@ These statuses are final and won't change:
 
 - **`completed`**: The trade is done. Balance has been settled. (Can still transition to `reverted` if Steam reverses the trade afterward.)
 - **`canceled`**: The trade was canceled before processing started. No balance settlement.
-- **`declined`**: The end user declined the trade offer. Deposits: no items received, no settlement. Withdrawals: delivery didn't happen — your merchant wallet is auto-refunded **minus a 2% buyer-decline penalty** (capped at $9), so this refunds slightly less than `failed`.
+- **`declined`**: The end user declined the trade offer. Deposits: no items received, no settlement. Withdrawals (CS2 only): delivery didn't happen. Items AssetPay fills from its own stock are refunded in full; items bought from a marketplace are refunded **minus the penalty the marketplace kept**, so this can refund less than `failed`. A declined Rust offer ends as `failed`.
 - **`failed`**: The trade didn't go through. For withdrawals where you previously deducted the user's balance, refund it.
 - **`reverted`**: The trade was reversed after being settled. Check `revertedBy` to understand who initiated it.
 
@@ -157,9 +169,9 @@ When a trade reaches `reverted`, the `revertedBy` field tells you who caused it:
 | Value | Meaning |
 |-------|---------|
 | `supplier` | The marketplace supplier reversed the trade (withdrawals only) |
-| `user` | The end user reversed the trade |
+| `user` | Steam rolled the trade back after the end user accepted it. Not a decline: declined offers end in `declined` |
 
-For deposits, reversals typically happen when Steam reverses the trade post-completion — `revertedBy` is set to `user` in that case. For withdrawals, either party can reverse after acceptance.
+For deposits, a reversal normally happens during `hold`, when Steam rolls the trade back, and `revertedBy` is set to `user`. For withdrawals, either value can appear after acceptance; see [Trade Reversals](/guides/withdrawals#trade-reversals) for what each means for your merchant wallet.
 
 ## Bot Info
 

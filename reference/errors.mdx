@@ -17,6 +17,13 @@ All errors follow this format:
 }
 ```
 
+Some errors carry extra structured data next to `code`, `key` and `message`:
+
+| Field | Present on | Contents |
+|-------|-----------|----------|
+| `error.fields` | `VALIDATION_FAILED` (1001) | The validation issues for each rejected request field |
+| `error.details` | Selected errors, e.g. `USER_NOT_TRADEABLE` (7), `PRICE_CHANGED` (11), `TRADE_CANCEL_TOO_SOON` (27), `ITEM_OVERSTOCKED` (45) | Error-specific context, documented on the endpoint that returns it |
+
 Codes are grouped by domain:
 
 | Range | Domain |
@@ -41,34 +48,32 @@ Codes are grouped by domain:
 
 | Code | Key | HTTP | Description |
 |------|-----|------|-------------|
-| 1001 | `VALIDATION_FAILED` | 422 | Request body or query params failed validation |
+| 1001 | `VALIDATION_FAILED` | 400 | Request body, query or path params failed validation. See `error.fields` |
 | 1003 | `NOT_FOUND` | 404 | Resource not found |
-| 1004 | `CONFLICT` | 409 | State conflict |
 | 1005 | `RATE_LIMITED` | 429 | Too many requests |
 | 1006 | `SERVER_ERROR` | 500 | Internal server error |
-| 1007 | `SYSTEM_MAINTENANCE` | 503 | System is in maintenance mode |
-| 1008 | `UNPROCESSABLE` | 422 | Request cannot be processed |
-| 1009 | `SERVICE_UNAVAILABLE` | 503 | Deposit/withdrawal services temporarily unavailable |
+| 1007 | `SYSTEM_MAINTENANCE` | 503 | System is in maintenance mode. Also returned by deposit and withdrawal routes while only those are paused for maintenance |
 | 1010 | `NO_BOTS_AVAILABLE` | 503 | No Steam bots are configured or online |
-| 1011 | `FLEET_DEGRADED` | 503 | Steam bot fleet is degraded; retry shortly |
+| 1011 | `FLEET_DEGRADED` | 503 | Steam bot fleet is degraded; retry after the `Retry-After` header (30 seconds) |
+| 1014 | `DEPOSITS_PAUSED` | 503 | Deposits for this game are temporarily paused |
+| 1015 | `WITHDRAWALS_PAUSED` | 503 | Withdrawals for this game are temporarily paused |
 
 ## Authentication Errors
 
 | Code | Key | HTTP | Description |
 |------|-----|------|-------------|
 | 1100 | `UNAUTHORIZED` | 401 | Authentication required |
-| 1101 | `INVALID_CREDENTIALS` | 401 | Invalid email/username or password |
 | 1102 | `INVALID_TOKEN` | 401 | Token is invalid |
 | 1108 | `MISSING_BEARER` | 401 | Authorization header missing or invalid |
-| 1110 | `TOKEN_INVALID_OR_EXPIRED` | 401 | Token is invalid or expired |
-| 1111 | `TOKEN_EXPIRED` | 401 | Token has expired |
 
 ## Account / Access Errors
 
 | Code | Key | HTTP | Description |
 |------|-----|------|-------------|
 | 1300 | `FORBIDDEN` | 403 | You don't have permission to access this resource |
+| 1300 | `MERCHANT_API_KEY_REQUIRED` | 403 | The route needs a merchant API key and was called with an admin key. Shares code 1300, so branch on `key` |
 | 1301 | `ACCOUNT_DISABLED` | 403 | Account has been disabled |
+| 1310 | `USER_NOT_FOUND` | 404 | No Steam user behind the supplied trade URL |
 
 ## API Key Errors
 
@@ -76,11 +81,9 @@ Codes are grouped by domain:
 |------|-----|------|-------------|
 | 1900 | `MISSING_API_KEY` | 401 | No `api-key` header provided |
 | 1901 | `INVALID_API_KEY` | 401 | API key not found or invalid |
-| 1902 | `API_KEY_REVOKED` | 401 | API key has been revoked |
-| 1903 | `API_KEY_SCOPE_DENIED` | 403 | API key doesn't have the required scope |
+| 1902 | `API_KEY_REVOKED` | 403 | API key has been revoked |
 | 1904 | `API_KEY_IP_DENIED` | 403 | Request IP is not in the key's whitelist |
-| 1908 | `INSUFFICIENT_SCOPE` | 403 | Insufficient scope permissions for this operation |
-| 1910 | `API_SECRET_INVALID` | 401 | Invalid API secret |
+| 1908 | `INSUFFICIENT_SCOPE` | 403 | API key doesn't have the scope this operation requires |
 | 1915 | `NO_API_SECRET_CONFIGURED` | 400 | Merchant has no API secret configured (required for client-token signing) |
 
 ## Trading Errors
@@ -90,18 +93,16 @@ Returned by deposit, withdrawal, inventory, and market endpoints.
 | Code | Key | HTTP | Description |
 |------|-----|------|-------------|
 | 1 | `EXTERNAL_ID_EXISTS` | 409 | External ID already exists for this merchant |
-| 2 | `MISSING_ITEMS` | 400 | No items were provided in the request |
 | 3 | `INVENTORY_FETCH_FAILED` | 424 | Couldn't load the user's Steam inventory |
 | 4 | `NO_OFFER_FOUND` | 400 | No valid offer exists for this item |
 | 5 | `TRADE_OFFER_FAILED` | 502 | Failed to send the Steam trade offer |
 | 6 | `TOO_MANY_ACTIVE_TRADES` | 429 | User has too many pending trades (per-client deposit guard) |
-| 7 | `USER_NOT_TRADEABLE` | 400 | User's Steam account can't trade |
-| 8 | `TOO_MANY_ITEMS` | 400 | Too many items in a single request |
+| 7 | `USER_NOT_TRADEABLE` | 400 | User's Steam account can't trade. On a Steam ban, `error.details` carries `vacBanned`, `gameBans` and `economyBan` |
 | 9 | `ITEMS_UNAVAILABLE` | 400 | Selected items not found or no longer available |
 | 10 | `ITEMS_NOT_ACCEPTED` | 400 | Items are not accepted for deposit |
-| 11 | `PRICE_CHANGED` | 409 | Price has changed since you last fetched it |
+| 11 | `PRICE_CHANGED` | 409 | Price has changed since you last fetched it. On withdrawals, `error.details.items[]` lists `{ itemId, quoted, current }` |
 | 12 | `MERCHANT_BALANCE_LOW` | 400 | Merchant balance is too low for this withdrawal |
-| 13 | `INVALID_TRADEURL` | 400 | Invalid or inaccessible trade URL |
+| 13 | `INVALID_TRADEURL` | 400 | Steam rejected a well-formed trade URL. A malformed URL fails with `VALIDATION_FAILED` (1001) |
 | 14 | `LISTING_NOT_FOUND` | 404 | Marketplace listing not found |
 | 15 | `LISTING_PRICE_INVALID` | 400 | Listing has an invalid or missing price |
 | 16 | `INVALID_LISTING_ID` | 400 | Invalid listing ID format |
@@ -110,9 +111,7 @@ Returned by deposit, withdrawal, inventory, and market endpoints.
 | 19 | `DEPOSIT_IN_PROGRESS` | 409 | A deposit is already processing for this user |
 | 20 | `WITHDRAW_IN_PROGRESS` | 409 | A withdrawal is already processing for this user |
 | 21 | `TRADE_NOT_FOUND` | 404 | Trade not found |
-| 22 | `INVALID_STATE_TRANSITION` | 409 | Invalid trade state transition |
-| 23 | `INVALID_TRADE_ID` | 400 | Invalid trade ID |
-| 27 | `TRADE_CANCEL_TOO_SOON` | 422 | Item must be at least 30 minutes old before it can be cancelled |
+| 27 | `TRADE_CANCEL_TOO_SOON` | 422 | Item must be at least 30 minutes old before it can be cancelled. `error.details.cancellableAt` is the unix time (seconds) from which a retry can succeed |
 | 28 | `TRADE_NOT_CANCELLABLE` | 409 | Not cancellable in its current state, or the marketplace refused the cancel |
 | 29 | `ESCROW_NOT_ALLOWED` | 400 | The trade would be held in Steam escrow; the user must enable the Steam Guard Mobile Authenticator |
 | 30 | `INVENTORY_PRIVATE` | 400 | The user's Steam inventory is private or unreachable |
@@ -122,22 +121,38 @@ Returned by deposit, withdrawal, inventory, and market endpoints.
 | 42 | `INSUFFICIENT_STOCK` | 409 | Requested amount exceeds the available marketplace stock for this listing |
 | 43 | `MIXED_SUPPLIER_TRADE` | 409 | A single trade can't mix items from different suppliers |
 | 44 | `TRADE_CANCEL_UNSUPPORTED` | 409 | The item is Rust or internal-sourced, so there is no supplier cancel to call |
-| 45 | `ITEM_OVERSTOCKED` | 409 | We already hold the maximum quantity of one of these items; refresh the inventory and retry |
+| 45 | `ITEM_OVERSTOCKED` | 409 | We already hold the maximum quantity of one of these items; refresh the inventory and retry. `error.details.items[]` lists `{ itemId, marketHashName, remaining }` |
+| 2201 | `ITEM_NOT_FOUND` | 404 | The cancel endpoints found no matching trade, or no matching item under it |
 
 ## Asynchronous Trade Failure Codes
 
-The errors above are returned **synchronously** when a call is rejected. A withdrawal that was accepted but later fails carries a separate, smaller, stable code instead — on `Item.error` (and on `Trade.error` when the whole trade failed for one shared cause), typed as [`TradeFailureCode`](/reference/types#tradefailurecode). These are **not** numeric API error codes; they appear on the trade object and in callbacks.
+The errors above are returned **synchronously** when a call is rejected. A withdrawal that was accepted but later fails carries a separate, smaller, stable code instead: on `Item.error` (and on `Trade.error` when the whole trade failed for one shared cause), typed as [`TradeFailureCode`](/reference/types#tradefailurecode). These are **not** numeric API error codes; they appear on the trade object and in callbacks.
 
 | `error` | Meaning |
 |---------|---------|
 | `LISTING_UNAVAILABLE` | Listing sold / delisted / out of stock |
+| `NO_LISTING_AT_PRICE` | Nothing on sale at or below your max price |
 | `PRICE_CHANGED` | Price moved above your ceiling |
 | `TRADE_URL_INVALID` | Recipient's Steam trade URL is invalid or escrow-blocked |
 | `STEAM_ACCOUNT_RESTRICTED` | Recipient's Steam account can't receive (VAC / ban / hold / private) |
-| `MARKET_UNAVAILABLE` | Temporary upstream / our-side issue — retry later |
+| `BUYER_TRADE_RESTRICTED` | The marketplace suspended this buyer, usually until a stated time |
+| `MARKET_UNAVAILABLE` | Temporary upstream / our-side issue. Retry later |
 | `PURCHASE_FAILED` | Unclassified failure (catch-all) |
 
-`canceled` and `declined` items carry no code — the status is the reason. A `declined` withdrawal is buyer fault: your merchant wallet is refunded **minus a 2% penalty** (capped at $9). See [Withdrawals → Per-Item Failure Reasons](/guides/withdrawals#per-item-failure-reasons) for handling guidance.
+`Trade.error` is typed as [`TradeErrorCode`](/reference/types#tradeerrorcode), on deposits as well as withdrawals. It can hold any value above plus these trade-level outcomes:
+
+| `error` | Meaning |
+|---------|---------|
+| `USER_TRADE_RESTRICTED` | The user's Steam account can't trade |
+| `USER_INVENTORY_PRIVATE` | The user's Steam inventory is private |
+| `USER_ESCROW` | Trades with the user would be held in Steam escrow |
+| `USER_NOT_FOUND` | No Steam user behind the trade URL |
+| `OFFER_NOT_ACCEPTED` | Deposits: the offer reached the user and was not accepted |
+| `SERVICE_UNAVAILABLE` | A temporary issue on AssetPay's side. Retry later |
+| `MERCHANT_REJECTED` | Withdrawals: your approval callback rejected the trade |
+| `APPROVAL_TIMEOUT` | Withdrawals: your approval callback never gave an answer |
+
+`canceled` and `declined` items carry no code: the status is the reason. A `declined` withdrawal is buyer fault: items bought from a marketplace are refunded **minus the penalty** the marketplace kept, and items AssetPay fills from its own stock are refunded in full. See [Withdrawals → Per-Item Failure Reasons](/guides/withdrawals#per-item-failure-reasons) for handling guidance.
 
 ## Wallet / Funding Errors
 
@@ -145,7 +160,7 @@ Mostly returned by crypto wallet endpoints, but several apply to trading flows t
 
 | Code | Key | HTTP | Description |
 |------|-----|------|-------------|
-| 1600 | `INSUFFICIENT_BALANCE` | 400 | Insufficient balance for this operation |
+| 1600 | `INSUFFICIENT_BALANCE` | 400 | Insufficient balance for this operation. On withdrawals and buys, returned when another debit used up the balance after the `MERCHANT_BALANCE_LOW` (12) check passed |
 | 1601 | `INVALID_AMOUNT` | 400 | Invalid amount (e.g. zero or negative) |
 | 1622 | `INSTANT_DEPOSITS_DISABLED` | 503 | Instant deposits are temporarily disabled |
 
@@ -153,17 +168,15 @@ Mostly returned by crypto wallet endpoints, but several apply to trading flows t
 
 | Code | Key | HTTP | Description |
 |------|-----|------|-------------|
-| 1700 | `INVALID_SIGNATURE` | 401 | Callback signature verification failed |
-| 1701 | `MISSING_RAW_BODY` | 400 | Raw request body is missing |
 | 1704 | `CALLBACK_URL_TEST_FAILED` | 400 | Configured callback URL did not respond with 2xx |
 | 1705 | `MERCHANT_NO_CALLBACK_URL` | 409 | Merchant has no active callback URL (withdrawals require one) |
+| 1706 | `MERCHANT_CALLBACK_URL_DISABLED` | 409 | Merchant's callback URL has been disabled (withdrawals require an active one) |
+| 1707 | `MERCHANT_NO_API_SECRET` | 409 | Merchant has no active API secret (withdrawals require one) |
 
 ## Risk Management Errors
 
 | Code | Key | HTTP | Description |
 |------|-----|------|-------------|
-| 2100 | `INVALID_RISK_POLICY` | 400 | Invalid risk policy configuration |
-| 2101 | `RISK_POLICY_NOT_FOUND` | 404 | No active risk policy found |
 | 2103 | `CLIENT_USER_NOT_FOUND` | 404 | Client user not found |
 
 ## Identity Verification Errors
@@ -171,18 +184,11 @@ Mostly returned by crypto wallet endpoints, but several apply to trading flows t
 | Code | Key | HTTP | Description |
 |------|-----|------|-------------|
 | 2300 | `VERIFICATION_NOT_AVAILABLE` | 503 | Identity verification is not available |
-| 2301 | `VERIFICATION_ALREADY_VERIFIED` | 409 | Account is already verified |
-| 2302 | `VERIFICATION_IN_PROGRESS` | 409 | A verification is already in progress |
-| 2303 | `VERIFICATION_PROCESS_NOT_FOUND` | 404 | Verification process not found |
-| 2304 | `VERIFICATION_BANNED_IDENTITY` | 403 | This identity cannot be verified |
-| 2305 | `VERIFICATION_ACCOUNT_CAP_REACHED` | 409 | Maximum linked accounts reached for this identity |
-| 2306 | `VERIFICATION_ALREADY_LINKED` | 409 | Account is already linked to an identity |
-| 2307 | `VERIFICATION_IDENTITY_NOT_FOUND` | 404 | Verified identity not found |
-| 2308 | `VERIFICATION_SIGNICAT_ERROR` | 502 | Verification provider returned an error |
-| 2309 | `VERIFICATION_WEBHOOK_SIGNATURE_INVALID` | 401 | Verification webhook signature is invalid |
+| 2301 | `VERIFICATION_ALREADY_VERIFIED` | 400 | Account is already verified |
+| 2302 | `VERIFICATION_IN_PROGRESS` | 400 | A verification is already in progress |
+| 2305 | `VERIFICATION_ACCOUNT_CAP_REACHED` | 400 | Maximum linked accounts reached for this identity |
 | 2310 | `VERIFICATION_EMAIL_REQUIRED` | 400 | Email is required to link an existing identity |
-| 2311 | `VERIFICATION_NOT_LINKED` | 400 | Account does not have a linked identity |
-| 2312 | `VERIFICATION_LINK_FAILED` | 500 | Unable to link identity to this account |
+| 2312 | `VERIFICATION_LINK_FAILED` | 400 | Unable to link identity to this account |
 
 ## Handling Errors
 

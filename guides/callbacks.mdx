@@ -8,11 +8,11 @@ AssetPay sends HTTP POST requests to your callback URL whenever a trade changes 
 
 ## Setup
 
-Configure your callback URL in the AssetPay dashboard under Settings. Your API secret is used to sign every webhook — keep it private.
+Configure your callback URL in the AssetPay dashboard under Settings. Your API secret is used to sign every webhook, so keep it private.
 
 Your callback endpoint must:
 - Accept POST requests with JSON body
-- Respond with HTTP 200 within 15 seconds
+- Respond with any HTTP `2xx` within 15 seconds (10 seconds for the withdrawal approval callback)
 - Be publicly accessible (no auth required from our side)
 
 ## Callback Payload
@@ -47,18 +47,18 @@ The body of every state-change callback is the full trade object directly:
 | Field | Description |
 |-------|-------------|
 | `trade` | Full [Trade](/reference/types#trade) object with current state |
-| `trade.status` | The trade's new status — this is the event you're being notified about |
+| `trade.status` | The trade's new status. This is the event you're being notified about |
 | `trade.source` | `"client"` (end-user via `/client/trading/*`) or `"self"` (merchant self-trade via `/secure/*`). The same callback URL fires for both. |
 
-The "event" you're handling is `trade.status` — there is no separate `event` field on the body.
+The "event" you're handling is `trade.status`; there is no separate `event` field on the body.
 
 <Note>
-The withdrawal `initiated` callback acts as an approval gate — your handler must explicitly approve or reject it. See [The `initiated` callback for withdrawals](#the-initiated-callback-for-withdrawals) below.
+The withdrawal `initiated` callback acts as an approval gate: your handler must explicitly approve or reject it. See [The `initiated` callback for withdrawals](#the-initiated-callback-for-withdrawals) below.
 </Note>
 
 ## Signature Verification
 
-Every webhook is signed with HMAC-SHA256 using your API secret. The signature is delivered in the `X-AssetPay-Signature` header — **not** in the body.
+Every webhook is signed with HMAC-SHA256 using your API secret. The signature is delivered in the `X-AssetPay-Signature` header, **not** in the body.
 
 ### Header format
 
@@ -76,9 +76,9 @@ The HMAC-SHA256 message is the literal string:
 <deliveryId>.<timestamp>.<rawBody>
 ```
 
-- `deliveryId` — value from the `id=` field in the header
-- `timestamp` — value from the `t=` field (ISO 8601)
-- `rawBody` — the **raw request body bytes**, exactly as received. Do not re-serialize the parsed JSON; parsers may reorder keys or change spacing and break the HMAC.
+- `deliveryId`: value from the `id=` field in the header
+- `timestamp`: value from the `t=` field (ISO 8601)
+- `rawBody`: the **raw request body bytes**, exactly as received. Do not re-serialize the parsed JSON; parsers may reorder keys or change spacing and break the HMAC.
 
 ### Verification example
 
@@ -147,7 +147,12 @@ The 5-minute timestamp tolerance protects against replay attacks. Reject anythin
 
 ## Handling Events
 
-The `event` you're handling is the new value of `trade.status`. AssetPay dispatches a webhook on every status transition.
+The `event` you're handling is the new value of `trade.status`. AssetPay dispatches a webhook on status transitions, with two exceptions:
+
+- `active` is withheld until the trade has a Steam offer id, and is sent once the id lands.
+- A `pending` callback is dropped if the trade has already moved past `pending` when the callback is queued.
+
+Each delivery is retried independently (see [Retry Behavior](#retry-behavior)), so callbacks are not guaranteed to arrive in order: a retried `pending` can still land after `active`. Ignore a callback whose status is earlier in the flow than one you have already processed for that trade.
 
 ### Deposit Callbacks
 
@@ -155,26 +160,29 @@ The `event` you're handling is the new value of `trade.status`. AssetPay dispatc
 |----------------|-----------|
 | `initiated` | Trade created, no Steam offer sent yet. Acknowledge with `200`. No balance action. |
 | `pending` | Steam trade offer created, awaiting the sending bot's confirmation. Usually followed by `active` within seconds and may be skipped. Acknowledge with `200`. |
-| `active` | Steam trade offer **sent to the user** — awaiting their acceptance (`offerID` now present). Acknowledge with `200`. |
+| `active` | Steam trade offer **sent to the user**, awaiting their acceptance (`offerID` now present). Acknowledge with `200`. |
 | `hold` | User accepted, items received, Steam hold started. Credit `preCredit` if using instant deposits; otherwise just acknowledge. |
-| `completed` | Hold ended cleanly (or no hold required for Rust). Credit `pendingCredit` (or `totalPrice` if not using instant deposits). |
+| `completed` | CS2: hold ended cleanly. Credit `pendingCredit` (or `totalPrice` if not using instant deposits). Rust (no hold): credit `totalPrice`. |
 | `failed` | Trade did not go through. No credit needed. Optionally notify the user. |
 | `canceled` | Trade was canceled before any state was applied (incl. an unaccepted offer auto-canceled past its window). No action needed. |
 | `declined` | The end user declined the Steam trade offer. No items received, no credit needed. Optionally notify the user. |
-| `reverted` | The deposit was reversed, usually during the hold. Reverse any `preCredit` + `pendingCredit` already credited. Check `revertedBy`. |
+| `reverted` | The deposit was reversed, usually during the hold. Reverse only what you have already credited: `preCredit` during `hold`, `preCredit` + `pendingCredit` after `completed`. Check `revertedBy`. |
+
+Deposit callbacks carry `preCredit` from creation and `pendingCredit` once the trade enters `hold` (on Rust, once it reaches `completed`, where `preCredit` equals `totalPrice` and `pendingCredit` is `0`). They never include `collateral`; that field is only on the deposit creation response.
 
 ### Withdrawal Callbacks
 
 | `trade.status` | What to Do |
 |----------------|-----------|
-| `initiated` | **Approval gate** — see below. The merchant's wallet hasn't been debited yet; your response decides whether the withdrawal proceeds. |
+| `initiated` | **Approval gate** (see below). `totalPrice` is already locked from the merchant's balance and nothing has been purchased yet; your response decides whether the withdrawal proceeds. |
 | `pending` | Supplier is sourcing the item. Acknowledge with `200`. No balance action. |
-| `active` | Steam trade offer sent to the user — awaiting acceptance (`offerID` now present). Acknowledge with `200`. |
-| `hold` | Items sourced and **Steam trade offer accepted by the user** — hold period running (`offerID` + `holdEndDate` present). Acknowledge with `200`. |
+| `active` | Steam trade offer sent to the user, awaiting acceptance (`offerID` now present). Acknowledge with `200`. |
+| `hold` | Items sourced and **Steam trade offer accepted by the user**, hold period running (`offerID` + `holdEndDate` present). Acknowledge with `200`. |
 | `completed` | Hold ended cleanly. No action needed. |
 | `failed` | Trade did not go through. Refund `totalPrice` to the user's balance if you previously deducted it. |
+| `declined` | The user declined or let the Steam offer expire (CS2 only; a declined Rust offer ends as `failed`). Items AssetPay fills from its own stock are refunded in full. Items bought from a marketplace are refunded minus the penalty the marketplace kept for the decline. Decide your own user-facing refund. |
 | `canceled` | Trade was canceled before processing. Refund `totalPrice` to the user's balance if you previously deducted it. |
-| `reverted` | A previously completed withdrawal was reversed (by supplier or user). Refund `totalPrice`. Check `revertedBy`. |
+| `reverted` | A delivered withdrawal was reversed. Check `revertedBy`: with `supplier` your merchant wallet is refunded once the supplier reports the refund, so refund `totalPrice`; with `user` (Steam rolled back the trade after the user accepted it), items bought from a marketplace are forfeited and your wallet is not refunded, while CS2 items AssetPay fills from its own stock are refunded in full. |
 
 A withdrawal moves `initiated → pending → active → hold → completed`. The intermediate statuses (`pending`, `active`) are progress signals and may be skipped depending on the provider and delivery mode, so drive balance changes off `initiated` and the terminal states.
 
@@ -190,7 +198,7 @@ The approval callback body has the same shape as every other state callback:
 }
 ```
 
-Identify this as the approval gate by checking `trade.type === "withdraw"` and `trade.status === "initiated"`. The signature header and signing rules are also identical to regular callbacks — same `X-AssetPay-Signature: t=...,id=...,s=...` format, same `<deliveryId>.<timestamp>.<rawBody>` HMAC input.
+Identify this as the approval gate by checking `trade.type === "withdraw"` and `trade.status === "initiated"`. The signature header and signing rules are also identical to regular callbacks: same `X-AssetPay-Signature: t=...,id=...,s=...` format, same `<deliveryId>.<timestamp>.<rawBody>` HMAC input.
 
 Your handler should:
 1. Verify the signature
@@ -200,14 +208,14 @@ Your handler should:
 5. If no: respond with a rejection (see below)
 
 <Note>
-Self-trade withdrawals (`source === "self"`) **also** go through this gate. The merchant must have a callback URL configured — withdrawals fail immediately with `MERCHANT_NO_CALLBACK_URL` (1705) if none is registered. If you want to auto-approve all self-trades, your handler can return `200` whenever `trade.source === "self"`.
+Self-trade withdrawals (`source === "self"`) **also** go through this gate. The merchant must have a callback URL and an API secret configured. Withdrawal requests fail immediately with `MERCHANT_NO_CALLBACK_URL` (1705) if no callback URL is registered, `MERCHANT_CALLBACK_URL_DISABLED` (1706) if it was auto-disabled, or `MERCHANT_NO_API_SECRET` (1707) if there is no API secret. If you want to auto-approve all self-trades, your handler can return `200` whenever `trade.source === "self"`.
 </Note>
 
 ### Rejecting a Withdrawal
 
 The withdrawal approval gate accepts several rejection signals:
 
-**Option 1 — HTTP 4xx (recommended):**
+**Option 1: HTTP 4xx (recommended)**
 
 ```http
 HTTP/1.1 402 Payment Required
@@ -216,9 +224,9 @@ Content-Type: application/json
 { "reason": "Insufficient balance" }
 ```
 
-Any `4xx` status works (400, 402, 403, 409, etc.). The `reason` field is optional but recommended — it appears in AssetPay logs for debugging.
+Any `4xx` status works (400, 402, 403, 409, etc.). The `reason` field is optional but recommended; it appears in AssetPay logs for debugging.
 
-**Option 2 — HTTP 2xx with a rejection body:**
+**Option 2: HTTP 2xx with a rejection body**
 
 ```json
 { "action": "reject", "reason": "Insufficient balance" }
@@ -226,10 +234,10 @@ Any `4xx` status works (400, 402, 403, 409, etc.). The `reason` field is optiona
 
 Also accepted: `{ "status": "rejected" }`, `{ "errorCode": "INSUFFICIENT_BALANCE" }`, `{ "code": "INSUFFICIENT_BALANCE" }`.
 
-In either case, the trade is marked `failed`, the merchant wallet is refunded automatically, and you receive a follow-up `failed` callback.
+In either case, the trade is marked `failed` with `error: "MERCHANT_REJECTED"`, the merchant wallet is refunded automatically, and you receive a follow-up `failed` callback.
 
 <Note>
-Only `4xx` responses **or** one of the explicit rejection bodies above are treated as intentional rejections. A plain `200` with any other body counts as approval. `5xx` responses and timeouts are treated as delivery failures and retried.
+Only `4xx` responses (other than `408` and `429`) **or** one of the explicit rejection bodies above are treated as intentional rejections. A plain `2xx` with any other body counts as approval. `5xx` responses, `408`, `429` and timeouts (10 seconds per attempt) are retried, but only briefly: the approval callback gets 3 attempts in total, 5 seconds and then 10 seconds apart. If none succeeds, or an attempt is cut short on AssetPay's side (which ends the gate without the remaining attempts), the trade goes to `failed` with `error: "APPROVAL_TIMEOUT"` and the merchant wallet is refunded.
 </Note>
 
 ## Idempotency
@@ -273,13 +281,13 @@ app.post('/assetpay/callback', async (req, res) => {
 
 ## Retry Behavior
 
-If your endpoint returns a non-2xx status, times out, or doesn't respond within 15 seconds, AssetPay retries the callback:
+If your endpoint returns a non-2xx status, times out, or doesn't respond within 15 seconds, AssetPay retries the callback. This schedule applies to state-change callbacks; the withdrawal approval callback has its own short schedule (see above).
 
-- **Total attempts**: 11 (initial + 10 retries)
-- **Backoff schedule**: `30s, 30s, 5m, 5m, 15m, 15m, 1h, 1h, 6h, 6h`
-- **Total window**: ~14h 31m from the first attempt to the last retry
+- **Total attempts**: 10 (initial + 9 retries)
+- **Backoff schedule**: `30s, 5m, 5m, 15m, 15m, 1h, 1h, 6h, 6h`
+- **Total window**: ~14h 40m from the first attempt to the last retry
 
-If a callback URL fails continuously for **72 hours**, it is automatically disabled and removed from rotation. Delivery records are retained for 14 days for debugging — you can view callback history and manually retry failed deliveries from the AssetPay dashboard.
+If a callback URL fails continuously for **72 hours**, it is automatically disabled and removed from rotation. You can view callback history and resend a delivery from the AssetPay dashboard (the withdrawal approval callback cannot be resent). Delivery records stay with their trade: a `failed`, `canceled` or `declined` trade can be deleted together with its delivery records 30 days after its last update.
 
 ## Callback Example: Complete Deposit Flow
 
@@ -293,18 +301,18 @@ Here's the sequence of callbacks you'd receive for a typical CS2 deposit:
 5. completed  →  Hold ended, no reversal (credit pendingCredit here)
 ```
 
-`pending` is a progress signal only and can be skipped, so never gate logic on receiving it. If something goes wrong at any step, you'll get a `failed` callback instead of the next step. If the user declines the offer you'll get `declined`, and if it's auto-canceled after sitting unaccepted you'll get `canceled`. If the items are clawed back you'll get `reverted` — normally out of `hold`, while the 7-day window is still open, so reverse any `preCredit` you already applied. Rust deposits skip the `hold` step entirely and go straight from `active` to `completed`.
+`pending` is a progress signal only and can be skipped, so never gate logic on receiving it. If something goes wrong at any step, you'll get a `failed` callback instead of the next step. If the user declines the offer you'll get `declined`, and if it's auto-canceled after sitting unaccepted you'll get `canceled`. If the items are clawed back you'll get `reverted`, normally out of `hold`, while the 7-day window is still open, so reverse the `preCredit` you already applied. Rust deposits skip the `hold` step entirely and go straight from `active` to `completed`, where you credit `totalPrice`.
 
 ## Callback Example: Complete Withdrawal Flow
 
 Here's the sequence of callbacks you'd receive for a typical CS2 withdrawal:
 
 ```
-1. initiated  →  Approval gate — deduct balance and respond 2xx to approve
+1. initiated  →  Approval gate: deduct balance and respond 2xx to approve
 2. pending    →  Supplier sourcing the item
 3. active     →  Steam trade offer sent to the user (offerID now present)
 4. hold       →  User accepted, Steam hold running (offerID + holdEndDate present)
 5. completed  →  Hold ended, delivery final
 ```
 
-If you reject the `initiated` callback or the supplier purchase fails, you'll get a `failed` callback (refund the user's balance). A reversal after `hold` surfaces as `reverted`. **Rust withdrawals normally skip `hold`** — Rust has no 7-day reversal window, so they usually go `active → completed` directly with no `holdEndDate` (a Steam security escrow is the exception and surfaces as `hold`). Act on `initiated` and the terminal states rather than expecting every step.
+If you reject the `initiated` callback or the supplier purchase fails, you'll get a `failed` callback (refund the user's balance). A reversal after `hold` surfaces as `reverted`. **Rust withdrawals normally skip `hold`**: Rust has no 7-day reversal window, so they usually go `active → completed` directly with no `holdEndDate` (a Steam security escrow is the exception and surfaces as `hold`). Act on `initiated` and the terminal states rather than expecting every step.

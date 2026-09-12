@@ -3,7 +3,7 @@ title: "Cancel Buy (Self-Trade)"
 description: "Cancel every still-undelivered item in a merchant self-trade buy in one call; per-item outcomes come back in the body and refunds settle asynchronously."
 ---
 
-Merchant-facing equivalent of [`POST /client/trading/withdraw/{tradeId}/cancel`](/api-reference/trading/cancel-withdrawal). Requests cancellation of **every still-cancellable item** in one of your own **self-trade** buys, rather than one item at a time — a single call replaces a loop over [`POST /secure/buy/{tradeId}/items/{itemId}/cancel`](/api-reference/secure/cancel-buy-item).
+Merchant-facing equivalent of [`POST /client/trading/withdraw/{tradeId}/cancel`](/api-reference/trading/cancel-withdrawal). Requests cancellation of **every still-cancellable item** in one of your own **self-trade** buys, rather than one item at a time: a single call replaces a loop over [`POST /secure/buy/{tradeId}/items/{itemId}/cancel`](/api-reference/secure/cancel-buy-item).
 
 **Authentication:** Merchant API Key (`api-key` header)
 **Scope:** `CORE_ACCESS`
@@ -29,11 +29,11 @@ api-key: ap_...
 
 The supplier decides which items still qualify, so a **partial result is still a `200`**. Read the body, not the status code:
 
-- `requested` — how many items the supplier considered cancellable at all
-- `cancelled` / `failed` — how those split
-- `items[]` — one row per item the supplier reported on
+- `requested`: how many items the supplier considered cancellable at all
+- `cancelled` / `failed`: how those split
+- `items[]`: one row per item the supplier reported on
 
-Items the supplier never considered (already delivered, in Steam hold, Rust, internal-sourced) do not appear in `items[]` at all. An item must also be at least **30 minutes old** and not yet terminal; younger items come back as `failed` with `reason: "TRADE_CANCEL_TOO_SOON"`.
+Items the supplier never considered (already delivered, in Steam hold, Rust, internal-sourced) do not appear in `items[]` at all. A refused item comes back as `failed` with a `reason`: a stable-looking key reported by the supplier, for example `TRADE_CANCEL_TOO_SOON` for an item it considers too young to cancel. The exact value is not guaranteed.
 
 ## Response
 
@@ -61,12 +61,12 @@ Items the supplier never considered (already delivered, in Steam hold, Rust, int
 | `requested` | integer | Items the supplier considered cancellable. |
 | `cancelled` | integer | How many it accepted. |
 | `failed` | integer | How many it refused. |
-| `items[].itemId` | string | The item's AssetPay ID. |
+| `items[].itemId` | string | The item's AssetPay ID. When no item in the trade matches what the supplier reported, the supplier's own item id is returned instead. |
 | `items[].externalId` | string | Your own reference for the item, when you supplied one at buy time. Omitted otherwise. |
 | `items[].status` | string | `"cancelled"` or `"failed"`. |
-| `items[].reason` | string | Stable error key when the cancel was refused — e.g. `TRADE_CANCEL_TOO_SOON`, `TRADE_NOT_CANCELLABLE`. Omitted on success. |
+| `items[].reason` | string | The supplier's key for why the cancel was refused, for example `TRADE_CANCEL_TOO_SOON` or `TRADE_NOT_CANCELLABLE`. Passed through as reported, so not guaranteed to be one of these. Omitted on success. |
 
-A `cancelled` row only confirms the marketplace **accepted** the cancellation. AssetPay does **not** change item state inline — the refund and the transition to `canceled` arrive asynchronously through the standard `trade.*` [callback](/guides/callbacks). Poll [`GET /secure/trades/{tradeId}`](/api-reference/secure/get-trade) or rely on callbacks for the final state.
+A `cancelled` row only confirms the marketplace **accepted** the cancellation. AssetPay does **not** change item state inline. The refund and the transition to `canceled` arrive asynchronously through the standard `trade.*` [callback](/guides/callbacks). Poll [`GET /secure/trades/{tradeId}`](/api-reference/secure/get-trade) or rely on callbacks for the final state.
 
 <Note>
 A cancel lands on `canceled`, not `reverted`. `reverted` is for a delivered item that came back afterwards.
@@ -86,4 +86,4 @@ A cancel lands on `canceled`, not `reverted`. `reverted` is for a delivered item
 | 28 | `TRADE_NOT_CANCELLABLE` | The trade is not a withdraw-type buy, or the marketplace refused the request outright. |
 | 44 | `TRADE_CANCEL_UNSUPPORTED` | Every item in the trade is Rust or internal-sourced, so none can be cancelled. |
 | 1300 | `FORBIDDEN` | The trade is not a self-trade owned by the authenticated merchant. |
-| 2201 | `ITEM_NOT_FOUND` | No trade matches that `tradeId` or `externalId`. |
+| 2201 | `ITEM_NOT_FOUND` | No trade matches that `tradeId` or `externalId`. HTTP 404. |

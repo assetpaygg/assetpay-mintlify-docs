@@ -18,14 +18,14 @@ Authorization: CLIENT_TOKEN
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `game` | string | `730` | `"730"` (CS2) or `"252490"` (Rust) |
+| `game` | integer | `730` | `730` (CS2) or `252490` (Rust). Any other positive integer is served as CS2. |
 | `search` | string | - | Search by item name (max 100 chars) |
 | `sort` | string | - | `relevance`, `priceAsc`, `priceDesc`, `nameAsc`, or `nameDesc` |
-| `minPrice` | number | - | Minimum price filter (USD) |
-| `maxPrice` | number | - | Maximum price filter (USD) |
+| `minPrice` | number | - | Minimum price filter (USD, `0` or more) |
+| `maxPrice` | number | - | Maximum price filter (USD, `0` or more) |
 | `page` | number | `1` | Page number |
-| `perPage` | number | `50` | Items per page (min 1, max 1000) |
-| `development` | boolean | `false` | Sandbox flag. When `true` (or `1`), every returned item is stamped with instant delivery, a placeholder `previewToken`, and a synthetic holding `botInfo` so you can build against the full item shape using cheap live listings. |
+| `perPage` | number | `50` | Items per page (1 to 1000, or `-1` to return every matching item) |
+| `development` | boolean | `false` | Sandbox flag (`true`/`false` or `1`/`0`). When on, CS2 supplier listings are limited to instant delivery, and every returned item is stamped with instant delivery, a placeholder `previewToken`, a synthetic holding `botInfo` and a synthetic `assetId`, so you can build against the full item shape using cheap live listings. An item with no offer gets `{ "price": 0, "delivery": "instant" }`. |
 
 ## Response
 
@@ -44,7 +44,7 @@ Authorization: CLIENT_TOKEN
         "iconUrl": "IzMF03bk9WpSBq-S-ekoE33L-iLqGFHVaU25ZzQNQcXdEHOQ6UFc5FT_0NqFMOBBN-s...",
         "appid": 730,
         "tradable": true,
-        "marketPrice": 48.00,
+        "marketPrice": 45.00,
         "offer": {
           "price": 45.00,
           "delivery": "standard"
@@ -53,8 +53,35 @@ Authorization: CLIENT_TOKEN
         "wear": "0.28123",
         "rarity": "Covert",
         "color": "#EB4B4B",
-        "paintSeed": 42,
-        "stickers": []
+        "paintSeed": 42
+      },
+      {
+        "id": "9a8b7c6d-...",
+        "itemId": "0010f8d48278ccb8",
+        "assetId": "38912345678",
+        "classId": "310776560",
+        "instanceId": "302028390",
+        "appid": 730,
+        "name": "AWP | Asiimov",
+        "marketHashName": "AWP | Asiimov (Field-Tested)",
+        "type": "Sniper Rifle",
+        "iconUrl": "IzMF03bk9WpSBq-S-ekoE33L-iLqGFHVaU25ZzQNQcXdEHOQ6UFc5FT_0NqFMOBBN-s...",
+        "tradable": true,
+        "exterior": "Field-Tested",
+        "rarity": "Covert",
+        "color": "#EB4B4B",
+        "wear": "0.26511",
+        "paintSeed": 871,
+        "botInfo": {
+          "name": "BoulderBit",
+          "avatar": "https://avatars.fastly.steamstatic.com/9cd97136ae9dd40fd717acf1756cf70da876f5b6_full.jpg",
+          "steamId": "76561198733619862",
+          "joined": "2026-02-20T00:00:00.000Z"
+        },
+        "offer": {
+          "price": 44.20,
+          "delivery": "instant"
+        }
       }
     ],
     "count": 1523
@@ -74,9 +101,11 @@ Authorization: CLIENT_TOKEN
 | Field | Description |
 |-------|-------------|
 | `id` | Pass back as `itemId` in the withdrawal request |
-| `itemId` | The parent catalog item, not the listing — pass it to [`GET /client/market/item`](/api-reference/client/get-item-listings) to see every listing of the same item. CS2 only. Never pass this as the withdrawal `itemId`; that is the `id` above. |
-| `offer.price` | Purchase cost in USD — pass this back as `items[].price` in the withdrawal request |
-| `offer.delivery` | `"standard"` (bot sources from supplier and sends a Steam trade offer) or `"instant"` (item already pre-positioned on the bot) |
+| `itemId` | The parent catalog item, not the listing. Pass it to [`GET /client/market/item`](/api-reference/client/get-item-listings) to see every listing of the same item. CS2 only. Never pass this as the withdrawal `itemId`; that is the `id` above. |
+| `offer.price` | Purchase cost in USD. Pass this back as `items[].price` in the withdrawal request. |
+| `offer.delivery` | `"standard"` (bot sources from supplier and sends a Steam trade offer) or `"instant"` (item already pre-positioned on the bot). CS2 only: Rust rows don't carry it outside sandbox mode. |
+| `marketPrice` | On CS2 supplier listings, equal to `offer.price`. Pool rows (those carrying `botInfo`) and Rust rows omit it. |
+| `assetId`, `classId`, `instanceId`, `botInfo` | Present on pool rows: the Steam asset and the bot already holding it. These rows always deliver `"instant"`. |
 
 ## Rate Limits
 
@@ -84,3 +113,13 @@ Authorization: CLIENT_TOKEN
 |----------------|-------|
 | Verified | 300 requests / min |
 | Unverified | 30 requests / min |
+
+## Errors
+
+| Code | Key | When |
+|------|-----|------|
+| 1001 | `VALIDATION_FAILED` | Invalid query parameter (HTTP 400, details in `error.fields`) |
+| 1005 | `RATE_LIMITED` | Rate limit exceeded (HTTP 429) |
+| 1007 | `SYSTEM_MAINTENANCE` | Service is in maintenance mode (HTTP 503) |
+| 1102 | `INVALID_TOKEN` | Client token is invalid or expired |
+| 1108 | `MISSING_BEARER` | No `Authorization` header |

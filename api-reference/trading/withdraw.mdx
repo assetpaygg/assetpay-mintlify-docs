@@ -32,9 +32,11 @@ Authorization: CLIENT_TOKEN
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `items` | array | Yes | Items to withdraw (min 1, max 50) |
-| `items[].itemId` | string | Yes | Specific listing ID from `/client/market/item` (the `id` field of a listing — a UUIDv8 for CS2, compound for Rust). 5–256 chars. |
-| `items[].price` | number | Yes | Purchase price in USD (max \$100,000). Must equal the current price returned by `/client/market/item`. |
-| `items[].externalId` | string | No | Your own reference for this single item (1–128 chars). Echoed back on the item and accepted in place of the item id by both [cancel](/api-reference/trading/cancel-withdraw-item) endpoints. |
+| `items[].itemId` | string | Yes | Specific listing ID from `/client/market/item` (the `id` field of a listing: a UUIDv8 for CS2, compound for Rust). 5–256 chars. |
+| `items[].price` | number | Yes | The price you quoted the user, in USD (max \$100,000), normally the current price returned by `/client/market/item`. See [Price validation](#price-validation). |
+| `items[].maxPrice` | number | No | The most you will pay for this item, in USD (greater than 0, max \$100,000). Overrides `slippageBps` for this item. Omit to reject any rise above `price`. Not used for CS2 items bought from a marketplace, where `price` is the ceiling. |
+| `items[].externalId` | string | No | Your own reference for this single item (1–128 chars). Must be unique within the request. Echoed back on the item and accepted in place of the item id by both [cancel](/api-reference/trading/cancel-withdraw-item) endpoints. |
+| `slippageBps` | number | No | Upward price tolerance in basis points (100 = 1%), applied to every item that has no `maxPrice`. Integer, 0-2000. Defaults to `0`. Not used for CS2 items bought from a marketplace. |
 | `game` | string | No | `"730"` or `"252490"`. Defaults to `"730"`. |
 | `autoCancel` | number | No | **CS2 only.** Minutes after creation to automatically cancel any item still undelivered. Integer, 30-720. Defaults to `30`; send `720` to disable. Rejected on Rust with `VALIDATION_FAILED`. See [Automatic cancellation](/guides/withdrawals#automatic-cancellation). |
 | `externalId` | string | No | Your unique tracking ID (max 128 chars). Must be unique per trade. |
@@ -75,14 +77,25 @@ Authorization: CLIENT_TOKEN
 }
 ```
 
-The response is a full [Trade](/reference/types#trade) object. Each withdrawal item carries its own `status` field that mirrors the trade-level status as it progresses. On a freshly initiated withdraw the items only carry the data you submitted (`itemId`, `offer.price`) — Steam-side fields like `name`, `marketHashName`, `type`, and `iconUrl` are **omitted** until AssetPay has fetched them from the marketplace. They populate on subsequent state changes; poll `GET /client/trades/{id}` or rely on callbacks for the resolved per-item view.
+The response is a full [Trade](/reference/types#trade) object. Each withdrawal item carries its own `status` field that mirrors the trade-level status as it progresses. On a freshly initiated withdraw the items only carry the data you submitted (`itemId`, `offer.price`); Steam-side fields like `name`, `marketHashName`, `type`, and `iconUrl` are **omitted** until AssetPay has fetched them from the marketplace. They populate on subsequent state changes; poll `GET /client/trades/{id}` or rely on callbacks for the resolved per-item view.
+
+## Price validation
+
+Where AssetPay prices an item at creation, it compares the current price against the `price` you sent:
+
+- **Lower or equal:** accepted, and the item is charged at the current price.
+- **Higher:** rejected with `PRICE_CHANGED`, unless it still fits the item's `maxPrice` or, when `maxPrice` is absent, `price` plus `slippageBps`. Every item that failed is named in `details.items[]` as `{ itemId, quoted, current }`, so you can requote just those and retry.
+
+This check applies to Rust items and to CS2 items served from AssetPay's own stock. Other CS2 items are bought from the marketplace after approval and are not re-priced at creation: `price` is locked and is the ceiling for that purchase, and `maxPrice` / `slippageBps` do not apply. A cheaper fill is refunded on completion (see [price true-up](/guides/withdrawals#balance-handling-for-withdrawals)). A listing already known to be gone is rejected at creation with `LISTING_NOT_FOUND`; one that disappears or rises above the ceiling after that fails the item rather than the request.
+
+A single trade cannot mix CS2 items from AssetPay's own stock with marketplace items (`MIXED_SUPPLIER_TRADE`).
 
 ## How Balance Approval Works
 
 After this endpoint is called, AssetPay sends an `initiated` callback to your backend **before purchasing anything**. Your backend checks the user's balance, deducts it, and responds with `2xx` to approve. If the balance is insufficient, respond with `4xx` (e.g. `402 Payment Required`) to reject the trade. See the [Withdrawals guide](/guides/withdrawals#the-initiated-callback) for details.
 
 <Warning>
-Withdrawals require your merchant account to have an active callback URL configured. Calling this endpoint without one immediately fails with `MERCHANT_NO_CALLBACK_URL` (1705).
+Withdrawals require your merchant account to have an active callback URL and an API secret configured. Calling this endpoint without them fails immediately and no trade is created: `MERCHANT_NO_CALLBACK_URL` (1705) with no callback URL, `MERCHANT_CALLBACK_URL_DISABLED` (1706) when the URL was auto-disabled after repeated delivery failures (re-save it to re-enable), or `MERCHANT_NO_API_SECRET` (1707) with no API secret.
 </Warning>
 
 ## Rate Limits
@@ -99,17 +112,16 @@ Shared across all clients of the same merchant.
 | Code | Key | When |
 |------|-----|------|
 | 1 | `EXTERNAL_ID_EXISTS` | The `externalId` is already in use |
-| 2 | `MISSING_ITEMS` | Empty items array |
-| 8 | `TOO_MANY_ITEMS` | More than 50 items |
-| 9 | `ITEMS_UNAVAILABLE` | Items no longer available on market |
-| 11 | `PRICE_CHANGED` | Offer price changed since fetch |
+| 11 | `PRICE_CHANGED` | A current price is above what the item allows (see [Price validation](#price-validation)). `details.items[]` lists each as `{ itemId, quoted, current }` |
 | 12 | `MERCHANT_BALANCE_LOW` | Your merchant balance can't cover this withdrawal |
-| 13 | `INVALID_TRADEURL` | User's trade URL is invalid |
-| 14 | `LISTING_NOT_FOUND` | Marketplace listing not found |
-| 15 | `LISTING_PRICE_INVALID` | Listing has invalid price |
-| 16 | `INVALID_LISTING_ID` | Invalid listing ID format |
-| 20 | `WITHDRAW_IN_PROGRESS` | Another withdrawal is already processing for this user |
-| 1010 | `NO_BOTS_AVAILABLE` | No Steam bots online; retry shortly |
-| 1011 | `FLEET_DEGRADED` | Steam fleet degraded; retry shortly |
+| 14 | `LISTING_NOT_FOUND` | Listing not found or no longer available |
+| 15 | `LISTING_PRICE_INVALID` | Rust: the listing has no valid price |
+| 20 | `WITHDRAW_IN_PROGRESS` | Another withdrawal is already processing for this user. Retryable; the response carries `retry-after: 1` |
+| 42 | `INSUFFICIENT_STOCK` | Rust: more units of a listing were requested than are available |
+| 43 | `MIXED_SUPPLIER_TRADE` | CS2: the request mixes items from AssetPay's own stock with marketplace items |
+| 1001 | `VALIDATION_FAILED` | Invalid request body (HTTP 400), including an empty `items` array, more than 50 items, duplicate `items[].externalId` values, or `autoCancel` on Rust. `error.fields` maps each invalid field to its reason |
+| 1015 | `WITHDRAWALS_PAUSED` | Withdrawals for this game are temporarily paused (HTTP 503) |
 | 1601 | `INVALID_AMOUNT` | One of the offer amounts was zero or negative |
 | 1705 | `MERCHANT_NO_CALLBACK_URL` | Merchant has no active callback URL configured |
+| 1706 | `MERCHANT_CALLBACK_URL_DISABLED` | The callback URL was auto-disabled after repeated delivery failures; re-save it to re-enable |
+| 1707 | `MERCHANT_NO_API_SECRET` | Merchant has no active API secret, so the approval callback cannot be signed |

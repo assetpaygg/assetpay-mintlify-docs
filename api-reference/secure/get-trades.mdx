@@ -1,9 +1,9 @@
 ---
 title: "List Self-Trades"
-description: "Cursor-paginated history of trades the merchant initiated through secure sell and secure buy; end-user client trades are not included on this endpoint."
+description: "Cursor-paginated history of trades the merchant initiated through secure sell, secure buy and quick buy; end-user client trades are not included on this endpoint."
 ---
 
-Returns trades the merchant initiated through `/secure/sell` or `/secure/buy`. End-user (client) trades are **not** included on this endpoint — clients can fetch their own trade history via `/client/trades` with a client token.
+Returns trades the merchant initiated through `/secure/sell`, `/secure/buy` or `/secure/buy/quick`. End-user (client) trades are **not** included on this endpoint: clients can fetch their own trade history via `/client/trades` with a client token.
 
 **Authentication:** Merchant API Key (`api-key` header)
 **Scope:** `CORE_ACCESS`
@@ -19,9 +19,9 @@ api-key: ap_...
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `cursor` | string | — | Cursor from previous page's `nextCursor` |
+| `cursor` | string | - | Cursor from previous page's `nextCursor` |
 | `limit` | number | `20` | Page size (max `100`) |
-| `type` | string | — | Filter by `"deposit"` or `"withdraw"` |
+| `type` | string | - | Filter by `"deposit"` or `"withdraw"` |
 | `game` | string | `"730"` | Filter by game ID |
 
 ## Response

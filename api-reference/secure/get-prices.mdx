@@ -19,7 +19,7 @@ api-key: YOUR_API_KEY
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `game` | string | `730` | Game app ID (`"730"` = CS2, `"252490"` = Rust) |
+| `game` | integer | `730` | Game app ID: `730` = CS2, `252490` = Rust. Must be a positive integer; any value other than `730` returns the Rust price list |
 
 ## Response (CS2)
 
@@ -45,19 +45,19 @@ Each item carries a `deposit` price (what AssetPay pays you for the item) and a 
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `itemId` | string \| null | Assetpay catalog item id; `null` when there's no withdraw floor |
+| `itemId` | string \| null | Assetpay catalog item id; `null` only when the item has neither a withdraw floor nor AssetPay pool stock (a deposit-only row) |
 | `marketHashName` | string | Item's market hash name |
 | `accepted` | boolean | Whether the item is accepted for deposit (`deposit` > 0) |
 | `deposit` | number | Deposit offer price in USD (what we pay for the item) |
 | `withdraw.standard` | number \| null | Fee-inclusive standard-delivery buy price in USD |
 | `withdraw.instant` | number \| null | Fee-inclusive instant-delivery buy price in USD |
-| `phases` | array | Present **only on Doppler items** — per-phase breakdown (see below) |
+| `phases` | array | Present **only on Doppler items**: per-phase breakdown (see below) |
 
 ### Doppler items
 
 Doppler skins are returned as a **single entry** with a `phases[]` breakdown rather than one row per phase. The top-level `deposit`/`withdraw` carry the floor (cheapest phase / grouped floor) as a default.
 
-Each phase carries its own `withdraw.standard` and `withdraw.instant`. The two tiers are sourced separately, so a phase commonly has a standard floor and no instant one — `withdraw.instant` is `null` there. Quote a phase from its own row, never from the top-level `withdraw`, which is some other phase's floor.
+Each phase carries its own `withdraw.standard` and `withdraw.instant`. The two tiers are sourced separately, so a phase commonly has a standard floor and no instant one, and `withdraw.instant` is `null` there. Quote a phase from its own row, never from the top-level `withdraw`, which is some other phase's floor.
 
 ```json
 {

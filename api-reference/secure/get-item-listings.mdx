@@ -19,8 +19,8 @@ api-key: ap_...
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `itemId` | string | Required\* | Item type ID (from `/secure/market` or `/secure/prices`). Provide this **or** `marketHashName`; `itemId` wins when both are sent. |
-| `marketHashName` | string | Required\* | Exact market hash name (e.g. `AK-47 \| Redline (Field-Tested)`), resolved to the catalog item id. Ignored when `itemId` is supplied. |
+| `itemId` | string | Required\* | Item type ID (from `/secure/market` or `/secure/prices`), 1–256 chars. Provide this **or** `marketHashName`; `itemId` wins when both are sent. |
+| `marketHashName` | string | Required\* | Exact market hash name (e.g. `AK-47 \| Redline (Field-Tested)`), 1–256 chars, resolved to the catalog item id. CS2 only. Ignored when `itemId` is supplied. |
 | `delivery` | string | `any` | `"any"`, `"standard"` (trade-offer), or `"instant"` |
 | `phase` | string | - | Doppler phase: `"Phase 1"`–`"Phase 4"`, `"Ruby"`, `"Sapphire"`, `"Black Pearl"`, `"Emerald"`. Returns only that phase's listings. Combinable with `delivery`. |
 | `floatMin` | number | - | Lower bound on the item float/wear value (`0`–`1`). |
@@ -32,7 +32,7 @@ api-key: ap_...
 
 ## Response
 
-Same shape as [`GET /client/market/item`](/api-reference/client/get-item-listings#response). Each listing carries `offer.price`, `offer.delivery`, and any sticker/charm/float details.
+Same shape as [`GET /client/market/item`](/api-reference/client/get-item-listings#response). Each listing carries `offer.price`, `offer.delivery`, and any sticker/charm/float details. Listings never include `itemId`, since you named the item in the request.
 
 ```json
 {
@@ -42,20 +42,20 @@ Same shape as [`GET /client/market/item`](/api-reference/client/get-item-listing
     {
       "id": "listing-uuid-1",
       "marketHashName": "AK-47 | Redline (Field-Tested)",
+      "marketPrice": 10.50,
       "offer": {
         "price": 10.50,
         "delivery": "standard"
       },
       "wear": "0.15234",
-      "paintSeed": 123,
-      "stickers": []
+      "paintSeed": 123
     }
   ]
 }
 ```
 
 <Note>
-The `delivery` filter is applied **after** the upstream fetch. A request for `perPage=50` may return fewer than 50 items when filtering by `standard` or `instant`, because the upstream marketplace doesn't filter at fetch time.
+The `delivery` filter is applied by the marketplace when listings are fetched, not afterwards. `standard` also leaves out AssetPay pool units, which always deliver instantly.
 </Note>
 
 ## Rate Limits
@@ -64,3 +64,10 @@ The `delivery` filter is applied **after** the upstream fetch. A request for `pe
 |----------------|-------|
 | Verified | 6,000 requests / min |
 | Unverified | 100 requests / min |
+
+## Errors
+
+| Code | Key | When |
+|------|-----|------|
+| 14 | `LISTING_NOT_FOUND` | The item's marketplace listings could not be loaded and AssetPay has no pool stock of it. HTTP 404 |
+| 1001 | `VALIDATION_FAILED` | Neither `itemId` nor `marketHashName` was sent, or a parameter is out of range. HTTP 400, see `error.fields` |

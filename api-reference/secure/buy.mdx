@@ -31,16 +31,18 @@ api-key: ap_...
 |-----------|------|----------|-------------|
 | `tradeUrl` | string | Yes | Steam trade URL of the account receiving the items |
 | `items` | array | Yes | Items to buy (min 1, max 50) |
-| `items[].itemId` | string | Yes | Specific listing ID from `/secure/market/item` |
-| `items[].price` | number | Yes | Purchase price in USD (max $100,000). Must equal the current listing price. |
-| `items[].externalId` | string | No | Your own reference for this single item (1–128 chars). Echoed back on the item and accepted in place of the item id by both [cancel](/api-reference/secure/cancel-buy-item) endpoints. |
+| `items[].itemId` | string | Yes | Specific listing ID from `/secure/market/item` (5–256 chars) |
+| `items[].price` | number | Yes | The price you quoted, in USD (max $100,000). A lower current price is accepted and charged instead; a higher one is rejected with `PRICE_CHANGED` unless it fits `maxPrice` or `slippageBps`. |
+| `items[].maxPrice` | number | No | The most you will pay for this item, in USD (above 0, max $100,000). Overrides `slippageBps` for this item. |
+| `items[].externalId` | string | No | Your own reference for this single item (1–128 chars, unique within the request). Echoed back on the item and accepted in place of the item id by both [cancel](/api-reference/secure/cancel-buy-item) endpoints. |
+| `slippageBps` | integer | No | Upward price tolerance in basis points for every item without `maxPrice` (0–2000, default `0`; `100` = 1%). |
 | `game` | string | No | `"730"` or `"252490"`. Defaults to `"730"`. |
 | `autoCancel` | number | No | **CS2 only.** Minutes after creation to automatically cancel any item still undelivered. Integer, 30-720. Defaults to `30`; send `720` to disable. Rejected on Rust with `VALIDATION_FAILED`. See [Automatic cancellation](/guides/withdrawals#automatic-cancellation). |
-| `externalId` | string | No | Your unique tracking ID |
+| `externalId` | string | No | Your unique tracking ID (max 128 chars) |
 
 ## Response
 
-Returns a full [`Trade`](/reference/types#trade) object with `source: "self"`. On `initiated`, each item only carries the data you submitted (`itemId`, `offer.price`) — Steam-side fields like `name`, `marketHashName`, `type`, and `iconUrl` are **omitted** until they resolve.
+Returns a full [`Trade`](/reference/types#trade) object with `source: "self"`. On `initiated`, each item only carries the data you submitted (the listing id as `id`, and `offer.price`). Steam-side fields like `name`, `marketHashName`, `type`, and `iconUrl` are **omitted** until they resolve.
 
 ```json
 {
@@ -83,10 +85,10 @@ The merchant's available wallet balance must cover `totalPrice` at the time of t
 
 - To auto-approve all your own self-trades, return `2xx` whenever `trade.source === "self"` in your handler.
 - To reject (e.g. dry-run mode or operational kill-switch), respond with `4xx` and the trade is failed and the wallet lock is released.
-- Self-trade buys still **require an active callback URL** on the merchant account — calling this endpoint without one fails immediately with `MERCHANT_NO_CALLBACK_URL` (1705).
+- Self-trade buys still **require an active callback URL and an API secret** on the merchant account. The call fails immediately with `MERCHANT_NO_CALLBACK_URL` (1705) when there is no callback URL, `MERCHANT_CALLBACK_URL_DISABLED` (1706) when it has been disabled, and `MERCHANT_NO_API_SECRET` (1707) when there is no API secret.
 
 <Warning>
-This is different from `/secure/sell`, where there is no merchant-approval step at all. For `/secure/buy`, your callback handler must explicitly approve self-trades — there is no built-in bypass.
+This is different from `/secure/sell`, where there is no merchant-approval step at all. For `/secure/buy`, your callback handler must explicitly approve self-trades. There is no built-in bypass.
 </Warning>
 
 ## Rate Limits
@@ -98,4 +100,21 @@ This is different from `/secure/sell`, where there is no merchant-approval step 
 
 ## Errors
 
-Same set as [`POST /client/trading/withdraw`](/api-reference/trading/withdraw#errors). Common: `MERCHANT_BALANCE_LOW` (12), `MERCHANT_NO_CALLBACK_URL` (1705), `LISTING_NOT_FOUND` (14), `PRICE_CHANGED` (11), `INVALID_TRADEURL` (13).
+Same set as [`POST /client/trading/withdraw`](/api-reference/trading/withdraw#errors). The ones you are most likely to see:
+
+| Code | Key | When |
+|------|-----|------|
+| 1 | `EXTERNAL_ID_EXISTS` | `externalId` is already used by another of your trades |
+| 11 | `PRICE_CHANGED` | A current price is above what you allowed. `error.details.items[]` lists each such item as `{ itemId, quoted, current }`, so you can requote just those |
+| 12 | `MERCHANT_BALANCE_LOW` | Your available balance does not cover `totalPrice` |
+| 14 | `LISTING_NOT_FOUND` | A listing is gone or no longer available |
+| 15 | `LISTING_PRICE_INVALID` | A Rust listing has no usable price |
+| 20 | `WITHDRAW_IN_PROGRESS` | Another buy for the same Steam account is still being created. Retryable: sent with `retry-after: 1` |
+| 42 | `INSUFFICIENT_STOCK` | More units of a listing were requested than are available |
+| 43 | `MIXED_SUPPLIER_TRADE` | The basket mixes AssetPay pool items with third-party listings; buy them in separate calls |
+| 1001 | `VALIDATION_FAILED` | The body failed validation, including a malformed `tradeUrl`. HTTP 400, see `error.fields` |
+| 1015 | `WITHDRAWALS_PAUSED` | Withdrawals for this game are temporarily paused |
+| 1601 | `INVALID_AMOUNT` | An item or the basket prices to zero |
+| 1705 | `MERCHANT_NO_CALLBACK_URL` | No active callback URL on the account |
+| 1706 | `MERCHANT_CALLBACK_URL_DISABLED` | Your callback URL has been disabled |
+| 1707 | `MERCHANT_NO_API_SECRET` | No active API secret on the account |

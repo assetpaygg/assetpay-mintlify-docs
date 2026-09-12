@@ -34,20 +34,24 @@ api-key: YOUR_API_KEY
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `clientSteamId` | string | Yes | User's Steam ID 64 (must match `76561XXXXXXXXXXXX` format, 17 digits) |
-| `clientTradeUrl` | string | Yes | User's Steam trade URL |
+| `clientTradeUrl` | string | Yes | User's Steam trade URL, exactly `https://steamcommunity.com/tradeoffer/new/?partner=<partner>&token=<token>` (`partner` is 1-10 digits, `token` is 8 characters of `A-Z`, `a-z`, `0-9`, `_` or `-`). |
 | `clientId` | string | No | Your own identifier for this user (max 128 chars). Stored on every trade. |
 | `clientData` | object | No | User context for instant deposit collateral calculations. See fields below. |
 
+Unknown top-level body keys are rejected with `1001 VALIDATION_FAILED`.
+
 ### clientData Fields
 
-The `clientData` object feeds into the risk model that determines how much instant credit a user qualifies for during deposits. You can pass any key-value pairs, but these specific fields are used in collateral calculations:
+The `clientData` object feeds into the risk model that determines how much instant credit a user qualifies for during deposits. `totalWager`, `kycLevel`, `fiatDeposits` and `cryptoDeposits` are the fields used in collateral calculations. When you call the API, any other keys inside `clientData` are dropped; a token you sign locally (Option 2) keeps whatever keys you put in it.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `totalWager` | number | Total amount (USD) the user has wagered on your platform. Higher wager history increases the user's external trust score and unlocks more instant credit. |
-| `kycLevel` | number | The user's KYC verification level on your platform (0-3). Level 3 combined with diverse payment methods significantly raises the wager threshold used in risk scoring. |
-| `fiatDeposits` | boolean | Whether the user has made fiat deposits on your platform. Payment method diversity is a positive trust signal. |
-| `cryptoDeposits` | boolean | Whether the user has made crypto deposits on your platform. Combined with `fiatDeposits`, having both methods active unlocks the highest collateral thresholds. |
+| `totalWager` | number | Total amount (USD, `0` or more) the user has wagered on your platform. Higher wager history increases the user's external trust score and unlocks more instant credit. |
+| `kycLevel` | integer | The user's KYC verification level on your platform (`0` or more; values above 3 are scored as 3). Level 3 lowers the wager threshold used in risk scoring, so the same wager earns more instant credit. |
+| `fiatDeposits` | boolean | Whether the user has made fiat deposits on your platform. Counts only together with `cryptoDeposits`. |
+| `cryptoDeposits` | boolean | Whether the user has made crypto deposits on your platform. Both methods together lower the wager threshold as much as KYC level 3 does; KYC level 3 plus both methods gives the lowest threshold, and so the most credit per dollar wagered. |
+| `registrationDate` | string (ISO 8601) | When the user registered on your platform. Accepted but not currently used for scoring. |
+| `kycHash` | string | Opaque hash you compute from the user's KYC identifiers. Accepted but not currently used for scoring. |
 
 All fields are optional. If omitted, they default to `0` or `false` in the risk calculation, which means the user gets the baseline collateral amount.
 
@@ -55,7 +59,7 @@ All fields are optional. If omitted, they default to `0` or `false` in the risk 
 The more context you provide, the more instant credit your users can access. A user with high wager volume, KYC level 3, and both fiat and crypto deposits will qualify for significantly more collateral than one with no data.
 </Tip>
 
-`clientData` is updated every time you authenticate the same user. Pass fresh values on each authentication call to keep the risk model accurate.
+Authenticating only signs a token; nothing is stored at that point. The `clientData` carried in the token is saved to the user's record when they create a deposit or withdrawal with it. Issue a new token whenever the values change so the next trade uses current data.
 
 Response:
 
@@ -144,7 +148,7 @@ This means the typical architecture looks like:
     The user's browser uses the client token to fetch inventory, browse the market, and initiate trades.
   </Step>
   <Step title="AssetPay calls your backend">
-    For withdrawals, AssetPay sends an `initiated` callback to your backend. Your backend validates the user's balance, deducts it, and responds with `2xx` to approve the purchase. To reject, respond with `4xx` (e.g. `402 Payment Required`).
+    For withdrawals, AssetPay sends an `initiated` callback to your backend. Your backend validates the user's balance, deducts it, and responds with `2xx` to approve the purchase. To reject, respond with a `4xx` (e.g. `402 Payment Required`); `408` and `429` are retried instead. A `2xx` whose body has `"action": "reject"`, `"status": "rejected"`, or an `INSUFFICIENT_BALANCE` error code also rejects.
   </Step>
   <Step title="Your backend processes results">
     As the trade progresses, your backend receives callbacks for each status change. Credit balances on `completed`, handle refunds on `failed` or `reverted`.
@@ -157,7 +161,7 @@ You can also call AssetPay from your backend if you prefer. The client token wor
 
 ### What about the API key?
 
-Your API key (`ap_...`) should stay on your backend. It's used for merchant-level operations like authenticating clients and fetching prices. The client token is the one that's safe to expose to users.
+Your API key (`ap_...`) should stay on your backend. It's used for merchant-level operations like authenticating clients, fetching prices, and reading your wallet balance and ledger. The client token is the one that's safe to expose to users.
 
 ## API Key Scopes
 
@@ -166,9 +170,11 @@ Your API key needs the `CORE_ACCESS` scope to authenticate clients and use the `
 | Scope | Grants access to |
 |-------|-----------------|
 | `CORE_ACCESS` | Client authentication (`/auth/authenticate-client`), trade URL checks, prices, the `/secure/*` merchant self-trade endpoints, and read-only trade queries |
-| `DEPOSITS_WRITE` | Reserved for write operations on deposit-related resources |
-| `WITHDRAWALS_WRITE` | Reserved for write operations on withdrawal-related resources |
-| `LEDGER_READ` | Reserved for ledger / accounting endpoints |
-| `PROFILE_READ` | Reserved for merchant profile reads |
+| `LEDGER_READ` | Your wallet balance (`/v1/wallets/me/balance`) and wallet transaction history (`/v1/ledger/transactions`), plus the other dashboard ledger endpoints, not covered by this reference |
+| `DEPOSITS_WRITE` | Dashboard crypto top-up endpoints, not covered by this reference |
+| `WITHDRAWALS_WRITE` | Dashboard crypto payout endpoints, not covered by this reference |
+| `PROFILE_READ` | Dashboard profile, statistics, trade history and trade export endpoints, not covered by this reference |
+
+A key without the scope a route needs gets `403` with error `1908 INSUFFICIENT_SCOPE`. Grant only the scopes your integration uses.
 
 You can manage scopes and rotate keys from your dashboard.
