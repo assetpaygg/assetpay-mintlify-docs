@@ -1,0 +1,80 @@
+---
+title: "Get Crypto Deposit Address"
+description: "Return the end user's permanent USDT/USDC deposit address on a chain, creating it on the first call."
+---
+
+Returns the deposit address of the end user identified by `steamId`. The first call creates it, and it never changes afterwards. See [Crypto Deposits & Cashouts](/guides/crypto) for the full flow.
+
+**Authentication:** Merchant API Key (`api-key` header)
+**Scope:** `CORE_ACCESS`
+
+## Request
+
+```http
+GET https://api.assetpay.gg/secure/crypto/deposit-address?steamId=76561198012345678&chain=ETH
+api-key: ap_...
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `steamId` | string | Yes | SteamID64 of the end user |
+| `chain` | string | Yes | `ETH`, `BSC` or `SOL` |
+| `token` | string | No | `USDT` or `USDC`, default `USDC`. Solana only: the token whose account is opened. Ignored on other chains |
+
+## Response
+
+```json
+{
+  "requestId": "...",
+  "success": true,
+  "data": {
+    "steamId": "76561198012345678",
+    "chain": "ETH",
+    "network": "eth-mainnet",
+    "testnet": false,
+    "status": "active",
+    "address": "0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b",
+    "tokenAccount": null,
+    "tokens": [
+      { "token": "USDT", "contract": "0xdAC17F958D2ee523a2206206994597C13D831ec7", "decimals": 6 },
+      { "token": "USDC", "contract": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", "decimals": 6 }
+    ],
+    "minDepositCents": 1000,
+    "minConfirmations": 12,
+    "explorerUrl": "https://etherscan.io/address/0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b"
+  }
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `status` | string | `active`: ready. `pending`: a Solana account is still being opened, poll again. `paused`: the address is valid, but deposits are credited only once the chain resumes |
+| `address` | string \| null | The address to show the user. `null` while `pending` |
+| `tokenAccount` | string \| null | Solana only: the token account behind `address`. Informational, show `address` to the user |
+| `tokens` | array | The only tokens credited on this address. On Solana, the tokens whose accounts are open right now |
+| `minDepositCents` | number | Deposits under this amount are not credited |
+| `minConfirmations` | number | Blocks a deposit waits before it is credited |
+| `explorerUrl` | string \| null | Block explorer link for the address |
+
+<Warning>
+On Solana each token has its own account, opened on request and closed again once emptied. Call this endpoint with the right `token` before every Solana deposit and wait for `active`.
+</Warning>
+
+## Rate Limits
+
+Shared across the crypto read endpoints of all your users.
+
+| Merchant Status | Limit |
+|----------------|-------|
+| Verified | 1000 requests / min |
+| Unverified | 10 requests / min |
+
+## Errors
+
+| Code | Key | When |
+|------|-----|------|
+| 2522 | `ONCHAIN_MERCHANT_NOT_VERIFIED` | The merchant is not verified (HTTP 403) |
+| 2523 | `ONCHAIN_ADDRESS_CAPACITY` | Too many open Solana accounts for this merchant, retry later (HTTP 503) |
+| 2500 | `ONCHAIN_DISABLED` | Crypto is not available in this environment (HTTP 503) |
+| 1908 | `INSUFFICIENT_SCOPE` | The key does not have the `CORE_ACCESS` scope |
+| 1005 | `RATE_LIMITED` | Rate limit exceeded |

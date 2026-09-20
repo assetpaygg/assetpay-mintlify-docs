@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "AssetPay Public API",
-    "version": "0.8.0",
+    "version": "0.8.2",
     "description": "Public trading API - skin deposits, withdrawals, pricing, client endpoints, and identity verification."
   },
   "servers": [
@@ -35,6 +35,10 @@
     {
       "name": "Withdrawals",
       "description": "Skin withdrawal operations"
+    },
+    {
+      "name": "Crypto",
+      "description": "End-user USDT/USDC deposit addresses, deposits and cashouts on ETH, BSC and SOL"
     },
     {
       "name": "Verification",
@@ -1695,7 +1699,7 @@
                                 "required": [
                                   "name"
                                 ],
-                                "description": "Holding bot identity. Present on autoseller-pool marketplace items."
+                                "description": "Holding bot identity. Present on internal-pool marketplace items."
                               }
                             },
                             "required": [
@@ -2514,7 +2518,7 @@
                                 "required": [
                                   "name"
                                 ],
-                                "description": "Holding bot identity. Present on autoseller-pool marketplace items."
+                                "description": "Holding bot identity. Present on internal-pool marketplace items."
                               }
                             },
                             "required": [
@@ -3451,7 +3455,7 @@
                                 "required": [
                                   "name"
                                 ],
-                                "description": "Holding bot identity. Present on autoseller-pool marketplace items."
+                                "description": "Holding bot identity. Present on internal-pool marketplace items."
                               }
                             },
                             "required": [
@@ -4333,7 +4337,7 @@
                                 "required": [
                                   "name"
                                 ],
-                                "description": "Holding bot identity. Present on autoseller-pool marketplace items."
+                                "description": "Holding bot identity. Present on internal-pool marketplace items."
                               }
                             },
                             "required": [
@@ -4809,7 +4813,7 @@
     "/secure/buy/{tradeId}/items/{itemId}/cancel": {
       "post": {
         "summary": "Cancel an undelivered buy item (merchant self-trade)",
-        "description": "Requests cancellation of a single undelivered item from a merchant self-trade buy. Skinshark (CS2) items only - Rust and autoseller-sourced items have no provider cancel and return TRADE_CANCEL_UNSUPPORTED. An item must be at least 30 minutes old and not yet terminal. On success the refund flows back via the trade webhook; the response only confirms the cancellation was accepted.",
+        "description": "Requests cancellation of a single undelivered item from a merchant self-trade buy. Skinshark (CS2) items only - Rust and internal-sourced items have no provider cancel and return TRADE_CANCEL_UNSUPPORTED. An item must be at least 30 minutes old and not yet terminal. On success the refund flows back via the trade webhook; the response only confirms the cancellation was accepted.",
         "tags": [
           "Trading"
         ],
@@ -5234,7 +5238,7 @@
     "/secure/buy/{tradeId}/cancel": {
       "post": {
         "summary": "Cancel every undelivered item in a buy (merchant self-trade)",
-        "description": "Requests cancellation of every still-cancellable item in the trade. Skinshark (CS2) items only - Rust and autoseller-sourced items have no provider cancel and return TRADE_CANCEL_UNSUPPORTED. An item must be at least 30 minutes old and not yet terminal. On success the refund flows back via the trade webhook; the response only confirms the cancellation was accepted. Best effort: a partial result is still a 200, with a per-item status and reason, so check the body rather than the status code.",
+        "description": "Requests cancellation of every still-cancellable item in the trade. Skinshark (CS2) items only - Rust and internal-sourced items have no provider cancel and return TRADE_CANCEL_UNSUPPORTED. An item must be at least 30 minutes old and not yet terminal. On success the refund flows back via the trade webhook; the response only confirms the cancellation was accepted. Best effort: a partial result is still a 200, with a per-item status and reason, so check the body rather than the status code.",
         "tags": [
           "Trading"
         ],
@@ -6051,7 +6055,7 @@
                                 "required": [
                                   "name"
                                 ],
-                                "description": "Holding bot identity. Present on autoseller-pool marketplace items."
+                                "description": "Holding bot identity. Present on internal-pool marketplace items."
                               }
                             },
                             "required": [
@@ -6718,7 +6722,7 @@
                             "required": [
                               "name"
                             ],
-                            "description": "Holding bot identity. Present on autoseller-pool marketplace items."
+                            "description": "Holding bot identity. Present on internal-pool marketplace items."
                           }
                         },
                         "required": [
@@ -7439,7 +7443,7 @@
                                       "required": [
                                         "name"
                                       ],
-                                      "description": "Holding bot identity. Present on autoseller-pool marketplace items."
+                                      "description": "Holding bot identity. Present on internal-pool marketplace items."
                                     }
                                   },
                                   "required": [
@@ -8195,7 +8199,7 @@
                                     "required": [
                                       "name"
                                     ],
-                                    "description": "Holding bot identity. Present on autoseller-pool marketplace items."
+                                    "description": "Holding bot identity. Present on internal-pool marketplace items."
                                   }
                                 },
                                 "required": [
@@ -8618,7 +8622,7 @@
                                       "required": [
                                         "name"
                                       ],
-                                      "description": "Holding bot identity. Present on autoseller-pool marketplace items."
+                                      "description": "Holding bot identity. Present on internal-pool marketplace items."
                                     }
                                   },
                                   "required": [
@@ -9405,7 +9409,7 @@
                                 "required": [
                                   "name"
                                 ],
-                                "description": "Holding bot identity. Present on autoseller-pool marketplace items."
+                                "description": "Holding bot identity. Present on internal-pool marketplace items."
                               }
                             },
                             "required": [
@@ -10145,7 +10149,7 @@
                                       "required": [
                                         "name"
                                       ],
-                                      "description": "Holding bot identity. Present on autoseller-pool marketplace items."
+                                      "description": "Holding bot identity. Present on internal-pool marketplace items."
                                     }
                                   },
                                   "required": [
@@ -11348,7 +11352,7 @@
                                 "required": [
                                   "name"
                                 ],
-                                "description": "Holding bot identity. Present on autoseller-pool marketplace items."
+                                "description": "Holding bot identity. Present on internal-pool marketplace items."
                               }
                             },
                             "required": [
@@ -12015,7 +12019,7 @@
                             "required": [
                               "name"
                             ],
-                            "description": "Holding bot identity. Present on autoseller-pool marketplace items."
+                            "description": "Holding bot identity. Present on internal-pool marketplace items."
                           }
                         },
                         "required": [
@@ -12235,6 +12239,3816 @@
           },
           "404": {
             "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests - rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/client/crypto/deposit-address": {
+      "get": {
+        "summary": "Get the client's crypto deposit address",
+        "description": "Returns the end user's permanent USDT/USDC deposit address on the chosen chain and creates it on the first call. The address never changes and can be reused for every deposit. On Solana each token has its own account, opened on request: pass `token` (default USDC, ignored on other chains) for the token the end user is about to send. The first call answers `pending` with no address, poll until it is `active` and `tokens` lists that token, and call again before each later deposit because an emptied account is closed. Returns ONCHAIN_ADDRESS_CAPACITY (503) when the merchant has too many Solana accounts open. Only a listed token on the listed network is credited, and a deposit under `minDepositCents` is not credited. A cleared deposit is credited to the merchant balance and announced with a `crypto_deposit` webhook carrying the `steamId`; crediting the end user is the merchant's side. Available to verified merchants.",
+        "tags": [
+          "Crypto"
+        ],
+        "security": [
+          {
+            "ClientToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ETH",
+                "BSC",
+                "SOL"
+              ]
+            },
+            "required": true,
+            "name": "chain",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "USDT",
+                "USDC"
+              ],
+              "default": "USDC"
+            },
+            "required": false,
+            "name": "token",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deposit address",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "steamId": {
+                          "type": "string"
+                        },
+                        "chain": {
+                          "type": "string",
+                          "enum": [
+                            "ETH",
+                            "BSC",
+                            "SOL"
+                          ]
+                        },
+                        "network": {
+                          "type": "string"
+                        },
+                        "testnet": {
+                          "type": "boolean"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "active",
+                            "pending",
+                            "paused"
+                          ]
+                        },
+                        "address": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "tokenAccount": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "tokens": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "token": {
+                                "type": "string",
+                                "enum": [
+                                  "USDT",
+                                  "USDC"
+                                ]
+                              },
+                              "contract": {
+                                "type": "string"
+                              },
+                              "decimals": {
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "token",
+                              "contract",
+                              "decimals"
+                            ]
+                          }
+                        },
+                        "minDepositCents": {
+                          "type": "integer"
+                        },
+                        "minConfirmations": {
+                          "type": "integer"
+                        },
+                        "explorerUrl": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "steamId",
+                        "chain",
+                        "network",
+                        "testnet",
+                        "status",
+                        "address",
+                        "tokenAccount",
+                        "tokens",
+                        "minDepositCents",
+                        "minConfirmations",
+                        "explorerUrl"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - validation failed or invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests - rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable - maintenance mode",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/client/crypto/deposits": {
+      "get": {
+        "summary": "List the client's crypto deposits",
+        "description": "Lists the end user's native deposits, newest first. Pass `nextBefore` back as `before` for the next page.",
+        "tags": [
+          "Crypto"
+        ],
+        "security": [
+          {
+            "ClientToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "required": false,
+            "name": "before",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deposits page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "deposits": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "crypto_deposit"
+                                ]
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "pending",
+                                  "completed",
+                                  "failed",
+                                  "frozen",
+                                  "refunded",
+                                  "below_minimum"
+                                ]
+                              },
+                              "steamId": {
+                                "type": "string"
+                              },
+                              "chain": {
+                                "type": "string"
+                              },
+                              "token": {
+                                "type": "string"
+                              },
+                              "amount": {
+                                "type": "string"
+                              },
+                              "amountCents": {
+                                "type": "integer"
+                              },
+                              "cryptoAmount": {
+                                "type": "string"
+                              },
+                              "address": {
+                                "type": "string"
+                              },
+                              "txHash": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "from": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "createdAt": {
+                                "type": "string"
+                              },
+                              "updatedAt": {
+                                "type": "string"
+                              },
+                              "completedAt": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "type",
+                              "status",
+                              "steamId",
+                              "chain",
+                              "token",
+                              "amount",
+                              "amountCents",
+                              "cryptoAmount",
+                              "address",
+                              "txHash",
+                              "from",
+                              "createdAt",
+                              "updatedAt",
+                              "completedAt"
+                            ]
+                          }
+                        },
+                        "nextBefore": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "deposits",
+                        "nextBefore"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - validation failed or invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests - rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/client/crypto/withdraw": {
+      "post": {
+        "summary": "Withdraw crypto to the client's address",
+        "description": "Sends USDT or USDC from the merchant balance to an address the end user chose. Because the request comes from the end user, the merchant's server is asked first: the withdrawal starts as `awaiting_approval` and a signed POST with `{ withdrawal }` goes to the merchant callback URL, the same approval call used for skin withdrawals. A 2xx answer approves it; a 4xx answer, or a body with `action: \"reject\"`, refuses it. No usable answer after three tries refuses it. The merchant must debit its own user before approving. `amountCents` is debited from the merchant balance and held at once; the end user receives `receiveCents`, which is the amount minus the flat network fee `feeCents` of the chain. `requestId` makes the call safe to retry: the same `requestId` for the same end user returns the first withdrawal and never creates a second one. Every later status change is announced with a `crypto_withdraw` webhook carrying the `steamId`; on `rejected`, `failed` and `cancelled` the full amount is back in the merchant balance. Returns ONCHAIN_CLIENT_WITHDRAW_LIMIT (403) with `details.scope` (`user` or `merchant`) and `details.remainingCents` when a daily limit is reached, ONCHAIN_CLIENT_WITHDRAW_DISABLED (503) while the feature is switched off, and INSUFFICIENT_BALANCE (400) when the merchant balance does not cover it. Large withdrawals are held for a manual review (`in_review`). Available to verified merchants.",
+        "tags": [
+          "Crypto"
+        ],
+        "security": [
+          {
+            "ClientToken": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chain": {
+                    "type": "string",
+                    "enum": [
+                      "ETH",
+                      "BSC",
+                      "SOL"
+                    ]
+                  },
+                  "token": {
+                    "type": "string",
+                    "enum": [
+                      "USDT",
+                      "USDC"
+                    ]
+                  },
+                  "address": {
+                    "type": "string",
+                    "minLength": 26,
+                    "maxLength": 64
+                  },
+                  "amountCents": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 100000000
+                  },
+                  "requestId": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 64,
+                    "pattern": "^[A-Za-z0-9_-]+$"
+                  }
+                },
+                "required": [
+                  "chain",
+                  "token",
+                  "address",
+                  "amountCents",
+                  "requestId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Withdrawal created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "crypto_withdraw"
+                          ]
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "awaiting_approval",
+                            "in_review",
+                            "approved",
+                            "sent",
+                            "completed",
+                            "failed",
+                            "rejected",
+                            "cancelled"
+                          ]
+                        },
+                        "steamId": {
+                          "type": "string"
+                        },
+                        "chain": {
+                          "type": "string"
+                        },
+                        "token": {
+                          "type": "string"
+                        },
+                        "amount": {
+                          "type": "string"
+                        },
+                        "amountCents": {
+                          "type": "integer"
+                        },
+                        "feeCents": {
+                          "type": "integer"
+                        },
+                        "receiveCents": {
+                          "type": "integer"
+                        },
+                        "cryptoAmount": {
+                          "type": "string"
+                        },
+                        "address": {
+                          "type": "string"
+                        },
+                        "txHash": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "reason": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "type": "string"
+                        },
+                        "completedAt": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "type",
+                        "status",
+                        "steamId",
+                        "chain",
+                        "token",
+                        "amount",
+                        "amountCents",
+                        "feeCents",
+                        "receiveCents",
+                        "cryptoAmount",
+                        "address",
+                        "txHash",
+                        "reason",
+                        "createdAt",
+                        "updatedAt",
+                        "completedAt"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - validation failed or invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - the resource is in a state that forbids the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests - rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable - maintenance mode",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/client/crypto/withdrawals": {
+      "get": {
+        "summary": "List the client's crypto withdrawals",
+        "description": "Lists the end user's crypto withdrawals, newest first. Pass `nextBefore` back as `before` for the next page.",
+        "tags": [
+          "Crypto"
+        ],
+        "security": [
+          {
+            "ClientToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "required": false,
+            "name": "before",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Withdrawals page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "withdrawals": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "crypto_withdraw"
+                                ]
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "awaiting_approval",
+                                  "in_review",
+                                  "approved",
+                                  "sent",
+                                  "completed",
+                                  "failed",
+                                  "rejected",
+                                  "cancelled"
+                                ]
+                              },
+                              "steamId": {
+                                "type": "string"
+                              },
+                              "chain": {
+                                "type": "string"
+                              },
+                              "token": {
+                                "type": "string"
+                              },
+                              "amount": {
+                                "type": "string"
+                              },
+                              "amountCents": {
+                                "type": "integer"
+                              },
+                              "feeCents": {
+                                "type": "integer"
+                              },
+                              "receiveCents": {
+                                "type": "integer"
+                              },
+                              "cryptoAmount": {
+                                "type": "string"
+                              },
+                              "address": {
+                                "type": "string"
+                              },
+                              "txHash": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "reason": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "createdAt": {
+                                "type": "string"
+                              },
+                              "updatedAt": {
+                                "type": "string"
+                              },
+                              "completedAt": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "type",
+                              "status",
+                              "steamId",
+                              "chain",
+                              "token",
+                              "amount",
+                              "amountCents",
+                              "feeCents",
+                              "receiveCents",
+                              "cryptoAmount",
+                              "address",
+                              "txHash",
+                              "reason",
+                              "createdAt",
+                              "updatedAt",
+                              "completedAt"
+                            ]
+                          }
+                        },
+                        "nextBefore": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "withdrawals",
+                        "nextBefore"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - validation failed or invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests - rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/secure/crypto/withdraw": {
+      "post": {
+        "summary": "Withdraw crypto to a client's address",
+        "description": "Sends USDT or USDC from the merchant balance to an end user's address. The request comes from the merchant's own server, so no approval callback is made: debit your user first, then call this. `amountCents` is debited from the merchant balance and held at once; the end user receives `receiveCents`, which is the amount minus the flat network fee `feeCents` of the chain. `requestId` makes the call safe to retry: the same `requestId` for the same end user returns the first withdrawal and never creates a second one. Every later status change is announced with a `crypto_withdraw` webhook carrying the `steamId`; on `rejected`, `failed` and `cancelled` the full amount is back in the merchant balance. Returns ONCHAIN_CLIENT_WITHDRAW_LIMIT (403) with `details.scope` (`user` or `merchant`) and `details.remainingCents` when a daily limit is reached, ONCHAIN_CLIENT_WITHDRAW_DISABLED (503) while the feature is switched off, and INSUFFICIENT_BALANCE (400) when the merchant balance does not cover it. Large withdrawals are held for a manual review (`in_review`). Available to verified merchants. Requires CORE_ACCESS scope.",
+        "tags": [
+          "Crypto"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chain": {
+                    "type": "string",
+                    "enum": [
+                      "ETH",
+                      "BSC",
+                      "SOL"
+                    ]
+                  },
+                  "token": {
+                    "type": "string",
+                    "enum": [
+                      "USDT",
+                      "USDC"
+                    ]
+                  },
+                  "address": {
+                    "type": "string",
+                    "minLength": 26,
+                    "maxLength": 64
+                  },
+                  "amountCents": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 100000000
+                  },
+                  "requestId": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 64,
+                    "pattern": "^[A-Za-z0-9_-]+$"
+                  },
+                  "steamId": {
+                    "type": "string",
+                    "pattern": "^76561\\d{12}$"
+                  }
+                },
+                "required": [
+                  "chain",
+                  "token",
+                  "address",
+                  "amountCents",
+                  "requestId",
+                  "steamId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Withdrawal created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "crypto_withdraw"
+                          ]
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "awaiting_approval",
+                            "in_review",
+                            "approved",
+                            "sent",
+                            "completed",
+                            "failed",
+                            "rejected",
+                            "cancelled"
+                          ]
+                        },
+                        "steamId": {
+                          "type": "string"
+                        },
+                        "chain": {
+                          "type": "string"
+                        },
+                        "token": {
+                          "type": "string"
+                        },
+                        "amount": {
+                          "type": "string"
+                        },
+                        "amountCents": {
+                          "type": "integer"
+                        },
+                        "feeCents": {
+                          "type": "integer"
+                        },
+                        "receiveCents": {
+                          "type": "integer"
+                        },
+                        "cryptoAmount": {
+                          "type": "string"
+                        },
+                        "address": {
+                          "type": "string"
+                        },
+                        "txHash": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "reason": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "type": "string"
+                        },
+                        "completedAt": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "type",
+                        "status",
+                        "steamId",
+                        "chain",
+                        "token",
+                        "amount",
+                        "amountCents",
+                        "feeCents",
+                        "receiveCents",
+                        "cryptoAmount",
+                        "address",
+                        "txHash",
+                        "reason",
+                        "createdAt",
+                        "updatedAt",
+                        "completedAt"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - validation failed or invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - the resource is in a state that forbids the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests - rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable - maintenance mode",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/secure/crypto/withdrawals": {
+      "get": {
+        "summary": "List a client's crypto withdrawals",
+        "description": "Lists the end user's crypto withdrawals, newest first. Pass `nextBefore` back as `before` for the next page. Requires CORE_ACCESS scope.",
+        "tags": [
+          "Crypto"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "required": false,
+            "name": "before",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^76561\\d{12}$"
+            },
+            "required": true,
+            "name": "steamId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Withdrawals page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "withdrawals": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "crypto_withdraw"
+                                ]
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "awaiting_approval",
+                                  "in_review",
+                                  "approved",
+                                  "sent",
+                                  "completed",
+                                  "failed",
+                                  "rejected",
+                                  "cancelled"
+                                ]
+                              },
+                              "steamId": {
+                                "type": "string"
+                              },
+                              "chain": {
+                                "type": "string"
+                              },
+                              "token": {
+                                "type": "string"
+                              },
+                              "amount": {
+                                "type": "string"
+                              },
+                              "amountCents": {
+                                "type": "integer"
+                              },
+                              "feeCents": {
+                                "type": "integer"
+                              },
+                              "receiveCents": {
+                                "type": "integer"
+                              },
+                              "cryptoAmount": {
+                                "type": "string"
+                              },
+                              "address": {
+                                "type": "string"
+                              },
+                              "txHash": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "reason": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "createdAt": {
+                                "type": "string"
+                              },
+                              "updatedAt": {
+                                "type": "string"
+                              },
+                              "completedAt": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "type",
+                              "status",
+                              "steamId",
+                              "chain",
+                              "token",
+                              "amount",
+                              "amountCents",
+                              "feeCents",
+                              "receiveCents",
+                              "cryptoAmount",
+                              "address",
+                              "txHash",
+                              "reason",
+                              "createdAt",
+                              "updatedAt",
+                              "completedAt"
+                            ]
+                          }
+                        },
+                        "nextBefore": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "withdrawals",
+                        "nextBefore"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - validation failed or invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests - rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/secure/crypto/deposit-address": {
+      "get": {
+        "summary": "Get a client's crypto deposit address",
+        "description": "Returns the end user's permanent USDT/USDC deposit address on the chosen chain and creates it on the first call. The address never changes and can be reused for every deposit. On Solana each token has its own account, opened on request: pass `token` (default USDC, ignored on other chains) for the token the end user is about to send. The first call answers `pending` with no address, poll until it is `active` and `tokens` lists that token, and call again before each later deposit because an emptied account is closed. Returns ONCHAIN_ADDRESS_CAPACITY (503) when the merchant has too many Solana accounts open. Only a listed token on the listed network is credited, and a deposit under `minDepositCents` is not credited. A cleared deposit is credited to the merchant balance and announced with a `crypto_deposit` webhook carrying the `steamId`; crediting the end user is the merchant's side. Available to verified merchants. Requires CORE_ACCESS scope.",
+        "tags": [
+          "Crypto"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ETH",
+                "BSC",
+                "SOL"
+              ]
+            },
+            "required": true,
+            "name": "chain",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "USDT",
+                "USDC"
+              ],
+              "default": "USDC"
+            },
+            "required": false,
+            "name": "token",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^76561\\d{12}$"
+            },
+            "required": true,
+            "name": "steamId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deposit address",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "steamId": {
+                          "type": "string"
+                        },
+                        "chain": {
+                          "type": "string",
+                          "enum": [
+                            "ETH",
+                            "BSC",
+                            "SOL"
+                          ]
+                        },
+                        "network": {
+                          "type": "string"
+                        },
+                        "testnet": {
+                          "type": "boolean"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "active",
+                            "pending",
+                            "paused"
+                          ]
+                        },
+                        "address": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "tokenAccount": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "tokens": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "token": {
+                                "type": "string",
+                                "enum": [
+                                  "USDT",
+                                  "USDC"
+                                ]
+                              },
+                              "contract": {
+                                "type": "string"
+                              },
+                              "decimals": {
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "token",
+                              "contract",
+                              "decimals"
+                            ]
+                          }
+                        },
+                        "minDepositCents": {
+                          "type": "integer"
+                        },
+                        "minConfirmations": {
+                          "type": "integer"
+                        },
+                        "explorerUrl": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "steamId",
+                        "chain",
+                        "network",
+                        "testnet",
+                        "status",
+                        "address",
+                        "tokenAccount",
+                        "tokens",
+                        "minDepositCents",
+                        "minConfirmations",
+                        "explorerUrl"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - validation failed or invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests - rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable - maintenance mode",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/secure/crypto/deposits": {
+      "get": {
+        "summary": "List a client's crypto deposits",
+        "description": "Lists the end user's native deposits, newest first. Pass `nextBefore` back as `before` for the next page. Requires CORE_ACCESS scope.",
+        "tags": [
+          "Crypto"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "required": false,
+            "name": "before",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^76561\\d{12}$"
+            },
+            "required": true,
+            "name": "steamId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deposits page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "deposits": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "crypto_deposit"
+                                ]
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "pending",
+                                  "completed",
+                                  "failed",
+                                  "frozen",
+                                  "refunded",
+                                  "below_minimum"
+                                ]
+                              },
+                              "steamId": {
+                                "type": "string"
+                              },
+                              "chain": {
+                                "type": "string"
+                              },
+                              "token": {
+                                "type": "string"
+                              },
+                              "amount": {
+                                "type": "string"
+                              },
+                              "amountCents": {
+                                "type": "integer"
+                              },
+                              "cryptoAmount": {
+                                "type": "string"
+                              },
+                              "address": {
+                                "type": "string"
+                              },
+                              "txHash": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "from": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "createdAt": {
+                                "type": "string"
+                              },
+                              "updatedAt": {
+                                "type": "string"
+                              },
+                              "completedAt": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "type",
+                              "status",
+                              "steamId",
+                              "chain",
+                              "token",
+                              "amount",
+                              "amountCents",
+                              "cryptoAmount",
+                              "address",
+                              "txHash",
+                              "from",
+                              "createdAt",
+                              "updatedAt",
+                              "completedAt"
+                            ]
+                          }
+                        },
+                        "nextBefore": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "deposits",
+                        "nextBefore"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - validation failed or invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable, for display and logs only - do not parse it. Wording changes without notice; branch on `key` or `code` instead, and read `fields` for per-field detail. On VALIDATION_FAILED each offending field is named: \"tradeurl: Trade URL must be ...\"."
+                        },
+                        "fields": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Present only on VALIDATION_FAILED. Maps the dotted path of each rejected field to why it was rejected, one entry per field. Capped at 20 entries; `message` names the first 5."
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions",
             "content": {
               "application/json": {
                 "schema": {
@@ -12745,7 +16559,7 @@
                                 "required": [
                                   "name"
                                 ],
-                                "description": "Holding bot identity. Present on autoseller-pool marketplace items."
+                                "description": "Holding bot identity. Present on internal-pool marketplace items."
                               }
                             },
                             "required": [
@@ -13151,7 +16965,7 @@
                                       "required": [
                                         "name"
                                       ],
-                                      "description": "Holding bot identity. Present on autoseller-pool marketplace items."
+                                      "description": "Holding bot identity. Present on internal-pool marketplace items."
                                     }
                                   },
                                   "required": [
@@ -14036,7 +17850,7 @@
                                 "required": [
                                   "name"
                                 ],
-                                "description": "Holding bot identity. Present on autoseller-pool marketplace items."
+                                "description": "Holding bot identity. Present on internal-pool marketplace items."
                               }
                             },
                             "required": [
@@ -14847,7 +18661,7 @@
                                 "required": [
                                   "name"
                                 ],
-                                "description": "Holding bot identity. Present on autoseller-pool marketplace items."
+                                "description": "Holding bot identity. Present on internal-pool marketplace items."
                               }
                             },
                             "required": [
@@ -15257,7 +19071,7 @@
     "/client/trading/withdraw/{tradeId}/items/{itemId}/cancel": {
       "post": {
         "summary": "Cancel an undelivered withdrawal item",
-        "description": "Requests cancellation of a single undelivered withdrawal item. Skinshark (CS2) items only - Rust and autoseller-sourced items have no provider cancel and return TRADE_CANCEL_UNSUPPORTED. An item must be at least 30 minutes old and not yet terminal. On success the refund flows back via the trade webhook; the response only confirms the cancellation was accepted.",
+        "description": "Requests cancellation of a single undelivered withdrawal item. Skinshark (CS2) items only - Rust and internal-sourced items have no provider cancel and return TRADE_CANCEL_UNSUPPORTED. An item must be at least 30 minutes old and not yet terminal. On success the refund flows back via the trade webhook; the response only confirms the cancellation was accepted.",
         "tags": [
           "Withdrawals"
         ],
@@ -15682,7 +19496,7 @@
     "/client/trading/withdraw/{tradeId}/cancel": {
       "post": {
         "summary": "Cancel every undelivered item in a withdrawal",
-        "description": "Requests cancellation of every still-cancellable item in the trade. Skinshark (CS2) items only - Rust and autoseller-sourced items have no provider cancel and return TRADE_CANCEL_UNSUPPORTED. An item must be at least 30 minutes old and not yet terminal. On success the refund flows back via the trade webhook; the response only confirms the cancellation was accepted. Best effort: a partial result is still a 200, with a per-item status and reason, so check the body rather than the status code.",
+        "description": "Requests cancellation of every still-cancellable item in the trade. Skinshark (CS2) items only - Rust and internal-sourced items have no provider cancel and return TRADE_CANCEL_UNSUPPORTED. An item must be at least 30 minutes old and not yet terminal. On success the refund flows back via the trade webhook; the response only confirms the cancellation was accepted. Best effort: a partial result is still a 200, with a per-item status and reason, so check the body rather than the status code.",
         "tags": [
           "Withdrawals"
         ],

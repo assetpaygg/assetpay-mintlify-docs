@@ -46,6 +46,7 @@
               "guides/market",
               "guides/deposits",
               "guides/withdrawals",
+              "guides/crypto",
               "guides/instant-credit",
               "guides/identity-verification",
               "guides/trade-lifecycle"
@@ -90,7 +91,11 @@
               "api-reference/client/get-market",
               "api-reference/client/get-suggestions",
               "api-reference/client/get-item-listings",
-              "api-reference/client/get-trades"
+              "api-reference/client/get-trades",
+              "api-reference/client/crypto-deposit-address",
+              "api-reference/client/crypto-deposits",
+              "api-reference/client/crypto-withdraw",
+              "api-reference/client/crypto-withdrawals"
             ]
           },
           {
@@ -117,7 +122,11 @@
               "api-reference/secure/get-market",
               "api-reference/secure/get-item-listings",
               "api-reference/secure/get-trades",
-              "api-reference/secure/get-trade"
+              "api-reference/secure/get-trade",
+              "api-reference/secure/crypto-deposit-address",
+              "api-reference/secure/crypto-deposits",
+              "api-reference/secure/crypto-withdraw",
+              "api-reference/secure/crypto-withdrawals"
             ]
           },
           {

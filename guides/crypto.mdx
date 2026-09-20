@@ -1,0 +1,206 @@
+---
+title: "Crypto Deposits & Cashouts"
+description: "Let your users deposit and cash out in USDT and USDC on Ethereum, BNB Smart Chain and Solana: permanent deposit addresses, the approval call for cashouts, fees, limits and webhooks."
+---
+
+Your users can fund their balance on your platform with stablecoins and cash out to their own wallet. Every user gets a permanent deposit address per chain. AssetPay watches those addresses, credits your merchant balance when a deposit clears, and tells you which user it was for. A cashout runs the other way: it is paid out of your merchant balance to an address the user chose.
+
+<Note>
+Crypto for end users is available to verified merchants only. Unverified merchants receive `ONCHAIN_MERCHANT_NOT_VERIFIED`.
+</Note>
+
+## Supported Networks
+
+| Chain | `chain` | Deposits | Cashouts |
+|-------|---------|----------|----------|
+| Ethereum | `ETH` | USDT, USDC | USDT, USDC |
+| BNB Smart Chain | `BSC` | USDT, USDC | USDT, USDC |
+| Solana | `SOL` | USDT, USDC (one at a time, see below) | USDT, USDC |
+
+<Warning>
+Only the tokens listed in the address response are credited. On Solana each token has its own account, so ask for the address with the `token` the user is about to send and wait until `tokens` lists it. Show your users the token list from the response, never a hard-coded one.
+</Warning>
+
+All amounts are in USD cents. USDT and USDC are credited 1:1.
+
+## Deposits
+
+<Steps>
+  <Step title="Ask for the user's address">
+    Call `GET /client/crypto/deposit-address?chain=ETH` with the client token, or `GET /secure/crypto/deposit-address` with your API key and a `steamId`. The first call creates the address. It never changes, so you can cache it and reuse it for every deposit on Ethereum and BNB Smart Chain.
+  </Step>
+  <Step title="Show it to the user">
+    Display `address`, the network, the accepted `tokens` and `minDepositCents`. While `status` is `paused` the address is valid but deposits are credited only once the chain resumes.
+  </Step>
+  <Step title="The user sends the tokens">
+    AssetPay sees the transfer within seconds and records a deposit with status `pending`.
+  </Step>
+  <Step title="The deposit clears">
+    After `minConfirmations` blocks the deposit becomes `completed`, your merchant balance is credited, and you receive a `crypto_deposit` webhook with the `steamId`. Credit your user when that webhook arrives.
+  </Step>
+</Steps>
+
+### Solana addresses are opened on request
+
+A Solana account costs rent while it is open, so it is opened when the user asks for it and closed again once it has been emptied or has sat unused.
+
+- Pass `token=USDT` or `token=USDC` (default `USDC`) for the token the user is about to send. USDT and USDC use separate accounts behind the same `address`, and each one is opened on its own.
+- The first call answers `status: "pending"` with `address: null`. Poll the same endpoint with the same `token` every few seconds until it is `active` and `tokens` lists that token. This usually takes under a minute.
+- Call the endpoint again before **every** later Solana deposit. If the account was closed in the meantime, the call reopens it.
+- `ONCHAIN_ADDRESS_CAPACITY` (503) means too many of your users have an open Solana account right now. Retry later.
+
+### Minimum deposit
+
+| Chain | Minimum |
+|-------|---------|
+| Ethereum | \$10.00 |
+| BNB Smart Chain | \$1.00 |
+| Solana | \$1.00 |
+
+The live value is `minDepositCents` in the address response. A deposit under the minimum is recorded with status `below_minimum` and is **not credited**. Tell your users the minimum before they send.
+
+### Deposit statuses
+
+| Status | Meaning |
+|--------|---------|
+| `pending` | Seen on the network, waiting for confirmations |
+| `completed` | Cleared and credited to your merchant balance |
+| `below_minimum` | Under the minimum, not credited |
+| `frozen` | Held for a compliance review. It ends as `completed` or `refunded` |
+| `refunded` | Not credited; the funds are returned to the sender |
+| `failed` | The transfer was dropped by the network before it cleared |
+
+## Cashouts
+
+A cashout debits **your merchant balance**. Debit your own user before you let it go through.
+
+There are two ways to start one, and they differ in who is trusted:
+
+| Route | Called by | Approval |
+|-------|-----------|----------|
+| `POST /client/crypto/withdraw` | The end user, with the client token | AssetPay asks your server first |
+| `POST /secure/crypto/withdraw` | Your server, with your API key | None. The call itself is your approval |
+
+### The approval call
+
+A cashout requested with a client token starts as `awaiting_approval`. The amount is already held from your merchant balance, and nothing is sent until your server answers.
+
+AssetPay sends a signed `POST` to your callback URL, the same URL and the same [signature](/guides/callbacks#signature-verification) as the skin withdrawal approval:
+
+```json
+{
+  "withdrawal": {
+    "id": "b0f3c1e2-...",
+    "type": "crypto_withdraw",
+    "status": "awaiting_approval",
+    "steamId": "76561198012345678",
+    "chain": "BSC",
+    "token": "USDT",
+    "amount": "25.00",
+    "amountCents": 2500,
+    "feeCents": 0,
+    "receiveCents": 2500,
+    "cryptoAmount": "25",
+    "address": "0x9c1f...",
+    "txHash": null,
+    "reason": null,
+    "createdAt": "2026-09-20T10:00:00.000Z",
+    "updatedAt": "2026-09-20T10:00:00.000Z",
+    "completedAt": null
+  }
+}
+```
+
+Tell it apart from a skin approval by the body: a cashout carries `withdrawal`, a skin trade carries `trade`.
+
+| Your answer | Result |
+|-------------|--------|
+| `2xx` | Approved. The payout is sent |
+| `4xx` (except `408` and `429`) | Refused. The held amount returns to your balance |
+| `2xx` with `{ "action": "reject", "reason": "..." }` | Refused, with your reason stored on the withdrawal |
+| `408`, `429`, `5xx`, timeout | Retried. Three attempts in total, 10 second timeout each |
+| No usable answer after three attempts | Refused |
+
+Inside your handler: verify the signature, check that `steamId` has at least `amountCents` on your platform, debit them, then answer `200`. If you approve and the payout later ends as `failed`, `rejected` or `cancelled`, give the user their balance back when that webhook arrives.
+
+<Warning>
+You need an active callback URL and an API secret. Without them every client cashout is refused with the reason `merchant_no_callback_url`.
+</Warning>
+
+### Fees and amounts
+
+`amountCents` is what leaves your merchant balance. A flat network fee per chain, `feeCents`, comes **out of** that amount, and the user receives `receiveCents`:
+
+```
+receiveCents = amountCents - feeCents
+```
+
+The fee depends on the chain and can be zero. Read it from the response rather than hard-coding it. The amount the user receives must be at least \$1.00, otherwise the request fails with `ONCHAIN_WITHDRAW_BELOW_MIN`.
+
+### Safe retries
+
+`requestId` is required. Sending the same `requestId` for the same user returns the first withdrawal and never creates a second one, so a timed out request can be repeated safely. Use a fresh `requestId` for every new cashout.
+
+### Daily limits
+
+Two rolling 24 hour limits apply: one per end user and one for all of your users together. When one is reached the request fails with `ONCHAIN_CLIENT_WITHDRAW_LIMIT` (403):
+
+```json
+{
+  "requestId": "...",
+  "success": false,
+  "error": {
+    "code": 2525,
+    "key": "ONCHAIN_CLIENT_WITHDRAW_LIMIT",
+    "message": "This withdrawal is over the daily crypto withdrawal limit",
+    "details": { "scope": "user", "remainingCents": 1200 }
+  }
+}
+```
+
+`scope` is `user` or `merchant`, and `remainingCents` is what can still be withdrawn now. Cashouts that were refused, failed or cancelled do not count.
+
+### Cashout statuses
+
+| Status | Meaning |
+|--------|---------|
+| `awaiting_approval` | Held from your balance, waiting for your server's answer |
+| `in_review` | Large cashout held for a manual review by AssetPay |
+| `approved` | Approved, waiting to be sent |
+| `sent` | Broadcast to the network, `txHash` is set |
+| `completed` | Confirmed on the network |
+| `rejected` | Refused by your server or by the review. The full amount is back in your balance |
+| `failed` | The payout could not be completed. The full amount is back in your balance |
+| `cancelled` | Cancelled before it was sent. The full amount is back in your balance |
+
+## Webhooks
+
+Both flows report to your regular callback URL with the regular [signature](/guides/callbacks#signature-verification). The body has one top-level key that tells you what it is:
+
+| Body | Sent on |
+|------|---------|
+| `{ "deposit": { ... } }` | Every deposit status, including `below_minimum` |
+| `{ "withdrawal": { ... } }` | `in_review`, `approved`, `sent`, `completed`, `failed`, `rejected`, `cancelled` |
+| `{ "trade": { ... } }` | Skin trades, unchanged |
+
+The objects are the same ones the list endpoints return, and the event is the object's `status`. `awaiting_approval` has no webhook of its own: the approval call is that announcement.
+
+Webhooks can arrive more than once. Key your handling on `id` plus `status`.
+
+## Errors
+
+| Code | Key | HTTP | When |
+|------|-----|------|------|
+| 2500 | `ONCHAIN_DISABLED` | 503 | Crypto is not available in this environment |
+| 2501 | `ONCHAIN_CHAIN_PAUSED` | 503 | The chain is paused. Cashouts on it are refused until it resumes |
+| 2503 | `ONCHAIN_UNSUPPORTED_TOKEN` | 400 | The token is not supported on this chain |
+| 2508 | `ONCHAIN_WITHDRAW_BELOW_MIN` | 400 | The user would receive less than \$1.00 after the fee |
+| 2509 | `ONCHAIN_WITHDRAW_INVALID_ADDRESS` | 400 | The address is not valid for this chain |
+| 2512 | `ONCHAIN_INSUFFICIENT_HOT_BALANCE` | 503 | AssetPay cannot cover this payout right now. Retry later |
+| 2514 | `ONCHAIN_DEPEG` | 503 | A stablecoin is trading off its peg and the rail is paused |
+| 2522 | `ONCHAIN_MERCHANT_NOT_VERIFIED` | 403 | Your merchant account is not verified |
+| 2523 | `ONCHAIN_ADDRESS_CAPACITY` | 503 | Too many open Solana accounts for your users |
+| 2524 | `ONCHAIN_CLIENT_WITHDRAW_DISABLED` | 503 | Cashouts are switched off |
+| 2525 | `ONCHAIN_CLIENT_WITHDRAW_LIMIT` | 403 | A daily limit is reached, see `details` |
+| 2526 | `ONCHAIN_CLIENT_WITHDRAW_BUSY` | 409 | Another cashout of yours is being created. Retry in a moment |
+| 1600 | `INSUFFICIENT_BALANCE` | 400 | Your merchant balance does not cover the cashout |

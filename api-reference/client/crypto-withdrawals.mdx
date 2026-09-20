@@ -1,0 +1,64 @@
+---
+title: "List Crypto Withdrawals"
+description: "List the end user's crypto cashouts, newest first, with their status, fee and transaction hash."
+---
+
+Lists the cashouts of the user the client token belongs to.
+
+**Authentication:** Client token (`Authorization` header)
+
+## Request
+
+```http
+GET https://api.assetpay.gg/client/crypto/withdrawals?limit=20
+Authorization: CLIENT_TOKEN
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `limit` | number | No | Page size, 1-100 |
+| `before` | string | No | ISO 8601 timestamp. Pass the previous page's `nextBefore` to get the next page |
+
+## Response
+
+```json
+{
+  "requestId": "...",
+  "success": true,
+  "data": {
+    "withdrawals": [
+      {
+        "id": "b0f3c1e2-...",
+        "type": "crypto_withdraw",
+        "status": "completed",
+        "steamId": "76561198012345678",
+        "chain": "ETH",
+        "token": "USDC",
+        "amount": "50.00",
+        "amountCents": 5000,
+        "feeCents": 100,
+        "receiveCents": 4900,
+        "cryptoAmount": "49",
+        "address": "0x9c1f0e2d3b4a59687766554433221100ffeeddcc",
+        "txHash": "0x44hq...",
+        "reason": null,
+        "createdAt": "2026-09-20T10:00:00.000Z",
+        "updatedAt": "2026-09-20T10:02:00.000Z",
+        "completedAt": "2026-09-20T10:02:00.000Z"
+      }
+    ],
+    "nextBefore": null
+  }
+}
+```
+
+Each entry is the same object [Crypto Withdraw](/api-reference/client/crypto-withdraw#response) returns. `nextBefore` is the cursor for the next page, `null` on the last page.
+
+## Rate Limits
+
+Shared across the crypto read endpoints of all your users.
+
+| Merchant Status | Limit |
+|----------------|-------|
+| Verified | 1000 requests / min |
+| Unverified | 10 requests / min |

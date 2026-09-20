@@ -52,6 +52,18 @@ The body of every state-change callback is the full trade object directly:
 
 The "event" you're handling is `trade.status`; there is no separate `event` field on the body.
 
+### Crypto callbacks
+
+Crypto deposits and cashouts use the same callback URL and the same signature, with a different top-level key instead of `trade`:
+
+| Body | What it is |
+|------|------------|
+| `{ "trade": { ... } }` | A skin trade |
+| `{ "deposit": { ... } }` | A user's crypto deposit changed status |
+| `{ "withdrawal": { ... } }` | A user's crypto cashout changed status, or is waiting for your approval |
+
+Branch on the key before reading anything else. The objects and the cashout approval call are described in [Crypto Deposits & Cashouts](/guides/crypto#webhooks).
+
 <Note>
 The withdrawal `initiated` callback acts as an approval gate: your handler must explicitly approve or reject it. See [The `initiated` callback for withdrawals](#the-initiated-callback-for-withdrawals) below.
 </Note>

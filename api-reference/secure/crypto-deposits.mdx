@@ -1,0 +1,71 @@
+---
+title: "List Crypto Deposits"
+description: "List the end user's crypto deposits, newest first, with their status and transaction hash."
+---
+
+Lists the deposits of the end user identified by `steamId`. Use it to show a deposit history, or to check on a deposit without waiting for the webhook.
+
+**Authentication:** Merchant API Key (`api-key` header)
+**Scope:** `CORE_ACCESS`
+
+## Request
+
+```http
+GET https://api.assetpay.gg/secure/crypto/deposits?steamId=76561198012345678&limit=20
+api-key: ap_...
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `steamId` | string | Yes | SteamID64 of the end user |
+| `limit` | number | No | Page size, 1-100 |
+| `before` | string | No | ISO 8601 timestamp. Pass the previous page's `nextBefore` to get the next page |
+
+## Response
+
+```json
+{
+  "requestId": "...",
+  "success": true,
+  "data": {
+    "deposits": [
+      {
+        "id": "b23c240e-...",
+        "type": "crypto_deposit",
+        "status": "completed",
+        "steamId": "76561198012345678",
+        "chain": "ETH",
+        "token": "USDT",
+        "amount": "25.00",
+        "amountCents": 2500,
+        "cryptoAmount": "25",
+        "address": "0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b",
+        "txHash": "0x8d79...",
+        "from": "0x9c1f...",
+        "createdAt": "2026-09-20T10:00:00.000Z",
+        "updatedAt": "2026-09-20T10:03:00.000Z",
+        "completedAt": "2026-09-20T10:03:00.000Z"
+      }
+    ],
+    "nextBefore": null
+  }
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `status` | string | `pending`, `completed`, `below_minimum`, `frozen`, `refunded` or `failed`. See [Deposit statuses](/guides/crypto#deposit-statuses) |
+| `amount` / `amountCents` | string / number | USD value credited, 1:1 with the token |
+| `cryptoAmount` | string | Token amount as sent |
+| `address` | string | The deposit address that received it |
+| `from` | string \| null | The sender's address |
+| `nextBefore` | string \| null | Cursor for the next page, `null` on the last page |
+
+## Rate Limits
+
+Shared across the crypto read endpoints of all your users.
+
+| Merchant Status | Limit |
+|----------------|-------|
+| Verified | 1000 requests / min |
+| Unverified | 10 requests / min |

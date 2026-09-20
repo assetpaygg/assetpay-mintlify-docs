@@ -164,6 +164,26 @@ Mostly returned by crypto wallet endpoints, but several apply to trading flows t
 | 1601 | `INVALID_AMOUNT` | 400 | Invalid amount (e.g. zero or negative) |
 | 1622 | `INSTANT_DEPOSITS_DISABLED` | 503 | Instant deposits are temporarily disabled |
 
+## Crypto Errors
+
+Returned by the `/client/crypto/*` and `/secure/crypto/*` endpoints. See [Crypto Deposits & Cashouts](/guides/crypto).
+
+| Code | Key | HTTP | Description |
+|------|-----|------|-------------|
+| 2500 | `ONCHAIN_DISABLED` | 503 | Crypto is not available in this environment |
+| 2501 | `ONCHAIN_CHAIN_PAUSED` | 503 | The chain is paused. Cashouts on it are refused until it resumes |
+| 2502 | `ONCHAIN_UNSUPPORTED_CHAIN` | 400 | Unknown chain |
+| 2503 | `ONCHAIN_UNSUPPORTED_TOKEN` | 400 | The token is not supported on this chain |
+| 2508 | `ONCHAIN_WITHDRAW_BELOW_MIN` | 400 | The user would receive less than \$1.00 after the network fee |
+| 2509 | `ONCHAIN_WITHDRAW_INVALID_ADDRESS` | 400 | The destination address is not valid for this chain |
+| 2512 | `ONCHAIN_INSUFFICIENT_HOT_BALANCE` | 503 | AssetPay cannot cover this payout right now. Retry later |
+| 2514 | `ONCHAIN_DEPEG` | 503 | A stablecoin is trading off its peg and the rail is paused |
+| 2522 | `ONCHAIN_MERCHANT_NOT_VERIFIED` | 403 | Crypto for end users requires a verified merchant |
+| 2523 | `ONCHAIN_ADDRESS_CAPACITY` | 503 | Too many Solana deposit accounts are open for this merchant. Retry later |
+| 2524 | `ONCHAIN_CLIENT_WITHDRAW_DISABLED` | 503 | Cashouts are switched off |
+| 2525 | `ONCHAIN_CLIENT_WITHDRAW_LIMIT` | 403 | A daily cashout limit is reached. `details.scope` is `user` or `merchant`, `details.remainingCents` is what is left |
+| 2526 | `ONCHAIN_CLIENT_WITHDRAW_BUSY` | 409 | Another cashout of this merchant is being created. Retry in a moment |
+
 ## Callback / Webhook Errors
 
 | Code | Key | HTTP | Description |
