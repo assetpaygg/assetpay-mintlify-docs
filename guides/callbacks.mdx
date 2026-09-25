@@ -78,7 +78,7 @@ Every webhook is signed with HMAC-SHA256 using your API secret. The signature is
 X-AssetPay-Signature: t=2026-03-11T10:00:00.000Z,id=<delivery-id>,s=<hex-signature>
 ```
 
-If your API secret was recently rotated, the header may also include `s1=<previous-hex-signature>` so callbacks signed with the prior secret remain verifiable during the grace window.
+For 24 hours after you rotate your API secret, the header also carries `s1=<hex-signature>`, signed with the previous secret, while `s` is signed with the new one. A server that still holds the old secret keeps verifying callbacks until you deploy the new one, as long as it checks both values. Client tokens are different: the ones signed with the old secret stop working as soon as you rotate.
 
 ### What's signed
 
@@ -113,14 +113,14 @@ function verifyAssetPaySignature(
   );
   const t = parts.t;
   const deliveryId = parts.id;
-  const sig = parts.s ?? parts.s1;
-  if (!t || !deliveryId || !sig) return false;
+  // After a rotation, s is signed with the new secret and s1 with the old one: check both.
+  const sigs = [parts.s, parts.s1].filter(Boolean);
+  if (!t || !deliveryId || sigs.length === 0) return false;
 
   const ts = Date.parse(t);
   if (Number.isNaN(ts)) return false;
   if (Math.abs(Date.now() - ts) > TOLERANCE_MS) return false;
 
-  const sigBuf = Buffer.from(sig);
   for (const secret of acceptedSecrets) {
     if (!secret) continue;
     const expected = Buffer.from(
@@ -128,8 +128,11 @@ function verifyAssetPaySignature(
         .update(`${deliveryId}.${t}.${rawBody}`)
         .digest('hex'),
     );
-    if (expected.length === sigBuf.length && timingSafeEqual(expected, sigBuf)) {
-      return true;
+    for (const sig of sigs) {
+      const sigBuf = Buffer.from(sig);
+      if (expected.length === sigBuf.length && timingSafeEqual(expected, sigBuf)) {
+        return true;
+      }
     }
   }
   return false;

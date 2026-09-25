@@ -25,9 +25,15 @@ wss://api.assetpay.gg/socket.io/?token=CLIENT_TOKEN&EIO=4&transport=websocket
 wss://api.assetpay.gg/socket.io/?token=ACCESS_TOKEN&EIO=4&transport=websocket
 ```
 
-All three methods join the same merchant room and receive the same trade, deposit, and withdrawal events. Use whichever is more convenient for your architecture. Admin credentials don't join a merchant room and never receive market updates.
+What a connection receives depends on the credential:
 
-One exception: [market updates](#market-updates) are delivered only to merchant API key connections where the key has the `CORE_ACCESS` scope. Client token and access token connections never receive them.
+| Credential | `trade` | `deposit` | `market` |
+|---|---|---|---|
+| API key | Every trade on your account | Yes | With the `CORE_ACCESS` scope |
+| Merchant access token | Every trade on your account | Yes | No |
+| Client token | Only that user's own deposits and withdrawals, the same trades `GET /client/trades` returns | No | No |
+
+A client token is safe to hand to an end user's browser: it never sees another user's trades, your own `/secure/sell` and `/secure/buy` trades, or your crypto fundings. API keys and access tokens see everything on your account, so keep them on your servers. Admin credentials don't join a merchant room and never receive market updates.
 
 ### Socket.IO Client Example
 
@@ -70,7 +76,7 @@ Trade events are not game-specific. You'll receive updates for all games (CS2 an
 
 ### Crypto Deposit Updates
 
-Fired when a merchant crypto deposit changes state:
+Fired when a crypto deposit on your account changes state. API key and access token connections only:
 
 ```typescript
 socket.on('deposit', (data) => {
@@ -78,15 +84,7 @@ socket.on('deposit', (data) => {
 });
 ```
 
-### Crypto Withdrawal Updates
-
-Fired when a merchant crypto withdrawal changes state:
-
-```typescript
-socket.on('withdrawal', (data) => {
-  console.log('Crypto withdrawal update:', data.funding);
-});
-```
+There is no crypto withdrawal event. Track withdrawals through [callbacks](/guides/callbacks) or by polling.
 
 ### Market Updates
 
@@ -153,4 +151,4 @@ Both WebSocket and callbacks deliver trade updates. They serve different purpose
 
 - Only the `websocket` transport is supported (no HTTP long-polling fallback)
 - The connection authenticates once on connect. If your token expires, reconnect with a fresh one.
-- All events are scoped to your merchant account. You only see your own trades.
+- All events are scoped to your merchant account, and client token connections further to that one user.
