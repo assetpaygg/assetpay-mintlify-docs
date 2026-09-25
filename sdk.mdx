@@ -1,0 +1,164 @@
+---
+title: "TypeScript SDK"
+sidebarTitle: "TypeScript SDK"
+description: "Integrate AssetPay from Node.js with the official assetpay-sdk package: typed methods for every endpoint, client tokens handled for you, safe retries, webhook verification and a Socket.IO event client."
+---
+
+`assetpay-sdk` is the official Node.js client for this API. It wraps every public endpoint with typed methods and takes care of the parts that are easy to get wrong:
+
+- **Client tokens** are minted and renewed for you.
+- **Retries** never send a money-moving request twice.
+- **Webhooks** are verified and classified, including approval callbacks.
+- **Events** from the Socket.IO endpoint arrive typed, with reconnects handled.
+
+## Install
+
+```bash
+npm install assetpay-sdk
+```
+
+Node.js 22.19 or newer. The package is ESM and can also be loaded with `require()` on those versions. Its one runtime dependency is `undici`, the HTTP client that powers Node's own `fetch`.
+
+## Create a client
+
+```ts
+import { AssetPay } from 'assetpay-sdk';
+
+const ap = new AssetPay({
+  apiKey: process.env.ASSETPAY_API_KEY!,
+  apiSecret: process.env.ASSETPAY_API_SECRET,
+  merchantId: process.env.ASSETPAY_MERCHANT_ID,
+});
+```
+
+`apiSecret` and `merchantId` are optional, but with both set the SDK mints [client tokens](/guides/authentication) locally instead of calling `POST /auth/authenticate-client` for every user. Point `baseUrl` at `https://api-staging.assetpay.gg` to use staging.
+
+<Note>
+Every withdrawal, including your own `/secure/buy`, is sent to your callback URL for approval. Configure a callback URL and an API secret before your first withdrawal, or it fails with `MERCHANT_NO_CALLBACK_URL` or `MERCHANT_NO_API_SECRET`.
+</Note>
+
+## Merchant and end-user calls
+
+The client itself calls the merchant endpoints with your API key. `asClient()` returns the end-user endpoints for one Steam user, authenticated with a client token.
+
+```ts
+const prices = await ap.market.prices({ game: 730 });
+const { balance } = await ap.wallet.balance();
+
+const user = ap.asClient({
+  steamId: '76561198000000001',
+  tradeUrl: 'https://steamcommunity.com/tradeoffer/new/?partner=39734273&token=AbCdEf12',
+});
+
+const { inventory } = await user.inventory.get({ game: 730 });
+const trade = await user.trades.deposit({
+  items: [{ itemId: inventory[0].id, price: inventory[0].offer!.price }],
+  externalId: 'deposit-1042',
+});
+```
+
+| Area | Merchant (`ap.`) | End user (`ap.asClient(...).`) |
+| --- | --- | --- |
+| Market | `market.prices`, `market.search`, `market.listings` | `market.search`, `market.listings`, `market.suggestions` |
+| Inventory | `inventory.get({ tradeUrl })` | `inventory.get()` |
+| Trades | `trades.sell`, `trades.buy`, `trades.quickBuy`, `trades.get`, `trades.getMany` | `trades.deposit`, `trades.withdraw`, `trades.quickWithdraw` |
+| Both scopes | `trades.list`, `trades.iterate`, `trades.cancel`, `trades.cancelItem` | same |
+| Crypto | `crypto.depositAddress`, `deposits`, `withdrawals`, `withdraw` (with `steamId`) | same, without `steamId` |
+| Wallet | `wallet.balance`, `wallet.transactions`, `wallet.transaction` | |
+| Other | `clients.authenticate`, `clients.checkTradeUrl`, `health()` | |
+
+Tokens are renewed 5 minutes before they expire. If a request comes back `INVALID_TOKEN`, for example after you rotate your API secret, the SDK issues a new token and replays the request once.
+
+List endpoints have async iterators that follow the right cursor for you:
+
+```ts
+for await (const trade of ap.trades.iterate({ game: 252490 })) {
+  // every trade, page by page
+}
+```
+
+## Retries and uncertain outcomes
+
+The SDK retries reads through network errors and unexplained server errors. It retries trade-creating calls (`sell`, `buy`, `quickBuy`, `deposit`, `withdraw`, `quickWithdraw`) only when the failure proves nothing was sent. Every call retries the refusals `FLEET_DEGRADED`, `DEPOSIT_IN_PROGRESS`, `WITHDRAW_IN_PROGRESS` and `ONCHAIN_CLIENT_WITHDRAW_BUSY`, which the API raises before doing any work. Rate limits (`429`) are never retried.
+
+When a trade-creating call fails after the request may have reached the API, the error has `ambiguous: true`: the trade may exist. Send an `externalId` with every trade and turn on `reconcile` to have the SDK settle it:
+
+```ts
+const ap = new AssetPay({ apiKey, reconcile: true });
+```
+
+On an ambiguous failure the SDK resends the call once with the same `externalId`. The API refuses a second trade under an `externalId` it has seen, so the resend can never create two. If the resend does not return a trade, the SDK looks the trade up with [`GET /secure/trades/{ref}`](/api-reference/secure/get-trade) and returns it. Only when no trade exists does the original error reach you. Check the returned trade's `status`, which can already be `failed`.
+
+<Warning>
+An `externalId` is used up even when a deposit fails with a definitive error such as `NO_BOTS_AVAILABLE`, because the trade record already exists. Use a new one for a new attempt.
+</Warning>
+
+## Errors
+
+Every failure is an `AssetPayError` carrying the API's `key`, `code`, `status`, `messages`, `fields`, `details` and `requestId`, as described in [Errors](/reference/errors). Branch on `key`:
+
+```ts
+import { isAmbiguous, isError } from 'assetpay-sdk';
+
+try {
+  await user.trades.deposit({ items, externalId });
+} catch (err) {
+  if (isError(err, 'ITEM_OVERSTOCKED')) return showRefused(err.details?.items);
+  if (isAmbiguous(err)) return markPending(externalId);
+  throw err;
+}
+```
+
+## Webhooks
+
+Import from `assetpay-sdk/webhooks` in a service that only receives [callbacks](/guides/callbacks). That entry point has no HTTP dependency. Verify against the raw request body:
+
+```ts
+import { approve, isCallbackTest, reject, verifyWebhook } from 'assetpay-sdk/webhooks';
+
+app.post('/webhooks/assetpay', express.raw({ type: 'application/json' }), async (req, res) => {
+  if (isCallbackTest(req.body, req.headers)) return res.status(200).json({ ok: true });
+
+  const event = verifyWebhook(req.body, req.headers, { secret: process.env.ASSETPAY_API_SECRET! });
+
+  if (event.type === 'withdraw.approval' || event.type === 'crypto_withdraw.approval') {
+    const verdict = (await canPay(event)) ? approve() : reject('insufficient balance');
+    return res.status(verdict.status).json(verdict.body);
+  }
+
+  if (!(await alreadyHandled(event.dedupeKey))) await apply(event);
+  res.status(200).json({});
+});
+```
+
+- `isCallbackTest` recognises the unsigned test delivery sent when you save a callback URL.
+- `event.type` is derived from the body: `withdraw.approval`, `crypto_withdraw.approval`, `trade`, `crypto_deposit`, `crypto_withdraw` or `unknown`.
+- `event.dedupeKey` is the delivery id for regular events, and the trade or withdrawal id for approvals, whose delivery id changes on every attempt.
+- A signature, timestamp or body problem throws `AssetPayWebhookError` with a `reason`. Answer it with `401`.
+- Pass `secret: [newSecret, oldSecret]` while you rotate your API secret.
+
+## Events over Socket.IO
+
+`assetpay-sdk/realtime` wraps the [WebSocket](/guides/websocket) endpoint. Install `socket.io-client` next to the SDK and connect with a merchant API key:
+
+```bash
+npm install socket.io-client
+```
+
+```ts
+import { AssetPayRealtime } from 'assetpay-sdk/realtime';
+
+const feed = new AssetPayRealtime({ apiKey: process.env.ASSETPAY_API_KEY! });
+
+feed.on('trade', (trade) => updateOrder(trade));
+feed.on('market', (event) => {
+  if (event.type === 'sync') return refetchMarket();
+  if (event.type === 'remove') return dropListing(event.itemId);
+  putListing(event.item);
+});
+feed.on('error', (err) => console.warn(err.reason, err.message));
+
+await feed.connect();
+```
+
+Attach listeners before `connect()`: the first `market` event after every connect is a `sync` telling you to refetch, because changes made while you were disconnected are not replayed. The feed reconnects on its own, including after the API restarts. Treat these events as a way to keep screens fresh, and use webhooks for anything that moves money.
