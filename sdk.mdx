@@ -1,10 +1,10 @@
 ---
 title: "TypeScript SDK"
 sidebarTitle: "TypeScript SDK"
-description: "Integrate AssetPay from Node.js with the official assetpay-sdk package: typed methods for every endpoint, client tokens handled for you, safe retries, webhook verification and a Socket.IO event client."
+description: "Integrate AssetPay from Node.js with the official @assetpay/assetpay-sdk package: typed methods for every endpoint, client tokens handled for you, safe retries, webhook verification and a Socket.IO event client."
 ---
 
-`assetpay-sdk` is the official Node.js client for this API. It wraps every public endpoint with typed methods and takes care of the parts that are easy to get wrong:
+`@assetpay/assetpay-sdk` is the official Node.js client for this API. It wraps every public endpoint with typed methods and takes care of the parts that are easy to get wrong:
 
 - **Client tokens** are minted and renewed for you.
 - **Retries** never send a money-moving request twice.
@@ -14,7 +14,7 @@ description: "Integrate AssetPay from Node.js with the official assetpay-sdk pac
 ## Install
 
 ```bash
-npm install assetpay-sdk
+npm install @assetpay/assetpay-sdk
 ```
 
 Node.js 22.19 or newer. The package is ESM and can also be loaded with `require()` on those versions. Its one runtime dependency is `undici`, the HTTP client that powers Node's own `fetch`.
@@ -22,7 +22,7 @@ Node.js 22.19 or newer. The package is ESM and can also be loaded with `require(
 ## Create a client
 
 ```ts
-import { AssetPay } from 'assetpay-sdk';
+import { AssetPay } from '@assetpay/assetpay-sdk';
 
 const ap = new AssetPay({
   apiKey: process.env.ASSETPAY_API_KEY!,
@@ -98,7 +98,7 @@ An `externalId` is used up even when a deposit fails with a definitive error suc
 Every failure is an `AssetPayError` carrying the API's `key`, `code`, `status`, `messages`, `fields`, `details` and `requestId`, as described in [Errors](/reference/errors). Branch on `key`:
 
 ```ts
-import { isAmbiguous, isError } from 'assetpay-sdk';
+import { isAmbiguous, isError } from '@assetpay/assetpay-sdk';
 
 try {
   await user.trades.deposit({ items, externalId });
@@ -111,10 +111,10 @@ try {
 
 ## Webhooks
 
-Import from `assetpay-sdk/webhooks` in a service that only receives [callbacks](/guides/callbacks). That entry point has no HTTP dependency. Verify against the raw request body:
+Import from `@assetpay/assetpay-sdk/webhooks` in a service that only receives [callbacks](/guides/callbacks). That entry point has no HTTP dependency. Verify against the raw request body:
 
 ```ts
-import { approve, isCallbackTest, reject, verifyWebhook } from 'assetpay-sdk/webhooks';
+import { approve, isCallbackTest, reject, verifyWebhook } from '@assetpay/assetpay-sdk/webhooks';
 
 app.post('/webhooks/assetpay', express.raw({ type: 'application/json' }), async (req, res) => {
   if (isCallbackTest(req.body, req.headers)) return res.status(200).json({ ok: true });
@@ -139,14 +139,14 @@ app.post('/webhooks/assetpay', express.raw({ type: 'application/json' }), async 
 
 ## Events over Socket.IO
 
-`assetpay-sdk/realtime` wraps the [WebSocket](/guides/websocket) endpoint. Install `socket.io-client` next to the SDK and connect with a merchant API key:
+`@assetpay/assetpay-sdk/realtime` wraps the [WebSocket](/guides/websocket) endpoint. Install `socket.io-client` next to the SDK and connect with a merchant API key:
 
 ```bash
 npm install socket.io-client
 ```
 
 ```ts
-import { AssetPayRealtime } from 'assetpay-sdk/realtime';
+import { AssetPayRealtime } from '@assetpay/assetpay-sdk/realtime';
 
 const feed = new AssetPayRealtime({ apiKey: process.env.ASSETPAY_API_KEY! });
 
