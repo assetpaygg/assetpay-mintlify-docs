@@ -1,6 +1,6 @@
 ---
 title: "Crypto Deposits & Cashouts"
-description: "Let your users deposit and cash out in USDT and USDC on Ethereum, BNB Smart Chain and Solana: permanent deposit addresses, the approval call for cashouts, fees, limits and webhooks."
+description: "Let your users deposit and cash out in USDT and USDC on Ethereum, BNB Smart Chain, Solana and Tron: permanent deposit addresses, the approval call for cashouts, fees, limits and webhooks."
 ---
 
 Your users can fund their balance on your platform with stablecoins and cash out to their own wallet. Every user gets a permanent deposit address per chain. AssetPay watches those addresses, credits your merchant balance when a deposit clears, and tells you which user it was for. A cashout runs the other way: it is paid out of your merchant balance to an address the user chose.
@@ -16,6 +16,7 @@ Crypto for end users is available to verified merchants only. Unverified merchan
 | Ethereum | `ETH` | USDT, USDC | USDT, USDC |
 | BNB Smart Chain | `BSC` | USDT, USDC | USDT, USDC |
 | Solana | `SOL` | USDT, USDC (one at a time, see below) | USDT, USDC |
+| Tron | `TRON` | USDT | USDT |
 
 <Warning>
 Only the tokens listed in the address response are credited. On Solana each token has its own account, so ask for the address with the `token` the user is about to send and wait until `tokens` lists it. Show your users the token list from the response, never a hard-coded one.
@@ -27,13 +28,13 @@ All amounts are in USD cents. USDT and USDC are credited 1:1.
 
 <Steps>
   <Step title="Ask for the user's address">
-    Call `GET /client/crypto/deposit-address?chain=ETH` with the client token, or `GET /secure/crypto/deposit-address` with your API key and a `steamId`. The first call creates the address. It never changes, so you can cache it and reuse it for every deposit on Ethereum and BNB Smart Chain.
+    Call `GET /client/crypto/deposit-address?chain=ETH` with the client token, or `GET /secure/crypto/deposit-address` with your API key and a `steamId`. The first call creates the address. It never changes, so you can cache it and reuse it for every deposit on Ethereum, BNB Smart Chain and Tron.
   </Step>
   <Step title="Show it to the user">
-    Display `address`, the network, the accepted `tokens` and `minDepositCents`. While `status` is `paused` the address is valid but deposits are credited only once the chain resumes.
+    Display `address`, the network, the accepted `tokens`, `minDepositCents` and the deposit fee. While `status` is `paused` the address is valid but deposits are credited only once the chain resumes.
   </Step>
   <Step title="The user sends the tokens">
-    AssetPay sees the transfer within seconds and records a deposit with status `pending`.
+    AssetPay sees the transfer within seconds (on Tron after about a minute, once its block is final) and records a deposit with status `pending`.
   </Step>
   <Step title="The deposit clears">
     After `minConfirmations` blocks the deposit becomes `completed`, your merchant balance is credited, and you receive a `crypto_deposit` webhook with the `steamId`. Credit your user when that webhook arrives.
@@ -56,8 +57,17 @@ A Solana account costs rent while it is open, so it is opened when the user asks
 | Ethereum | \$10.00 |
 | BNB Smart Chain | \$10.00 |
 | Solana | \$10.00 |
+| Tron | \$10.00 |
 
 The live value is `minDepositCents` in the address response. A deposit under the minimum is recorded with status `below_minimum` and waits up to 72 hours for more to the same address. Once the total reaches the minimum, every waiting deposit is credited (`completed`); if it never does, each one ends `failed` and is **not credited**. Tell your users the minimum before they send.
+
+### Deposit fee
+
+Deposits on Tron pay a flat \$2.50, taken from the deposit, unless the deposit is \$10,000 or more. The other chains have no deposit fee. Your merchant balance is credited the amount minus the fee, and the `crypto_deposit` webhook carries `amount` (as sent), `fee` and `netAmount` (what was credited).
+
+The address response states the terms for its chain: `depositFeeCents` is the fee and `depositFeeFreeFromCents` the amount from which none is charged (`null` when the chain has no fee). Show both to your users and read them from the response rather than hard-coding them.
+
+Below-minimum deposits that reach the minimum together pay one fee between them. Those credited along with a deposit that cleared on its own pay none.
 
 ### Deposit statuses
 
