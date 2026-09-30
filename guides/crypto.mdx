@@ -54,10 +54,10 @@ A Solana account costs rent while it is open, so it is opened when the user asks
 | Chain | Minimum |
 |-------|---------|
 | Ethereum | \$10.00 |
-| BNB Smart Chain | \$1.00 |
-| Solana | \$1.00 |
+| BNB Smart Chain | \$10.00 |
+| Solana | \$10.00 |
 
-The live value is `minDepositCents` in the address response. A deposit under the minimum is recorded with status `below_minimum` and is **not credited**. Tell your users the minimum before they send.
+The live value is `minDepositCents` in the address response. A deposit under the minimum is recorded with status `below_minimum` and waits up to 72 hours for more to the same address. Once the total reaches the minimum, every waiting deposit is credited (`completed`); if it never does, each one ends `failed` and is **not credited**. Tell your users the minimum before they send.
 
 ### Deposit statuses
 
@@ -65,10 +65,10 @@ The live value is `minDepositCents` in the address response. A deposit under the
 |--------|---------|
 | `pending` | Seen on the network, waiting for confirmations |
 | `completed` | Cleared and credited to your merchant balance |
-| `below_minimum` | Under the minimum, not credited |
+| `below_minimum` | Under the minimum, waiting up to 72 hours for more to the same address |
 | `frozen` | Held for a compliance review. It ends as `completed` or `refunded` |
 | `refunded` | Not credited; the funds are returned to the sender |
-| `failed` | The transfer was dropped by the network before it cleared |
+| `failed` | Not credited: dropped by the network before it cleared, or under the minimum for 72 hours |
 
 ## Cashouts
 
