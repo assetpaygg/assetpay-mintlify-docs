@@ -3,7 +3,7 @@ title: "Crypto Withdraw"
 description: "Cash out USDT or USDC from the merchant balance to an address the end user chose. Your server approves it first."
 ---
 
-Starts a cashout for the user the client token belongs to. Because the request comes from the end user, AssetPay asks your server before anything is sent: see [The approval call](/guides/crypto#the-approval-call).
+Starts a cashout for the user the client token belongs to. Nothing is sent until your server answers the [approval call](/guides/crypto#the-approval-call) with `{ "action": "approve" }`.
 
 **Authentication:** Client token (`Authorization` header)
 
@@ -25,8 +25,8 @@ Authorization: CLIENT_TOKEN
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `chain` | string | Yes | `ETH`, `BSC` or `SOL` |
-| `token` | string | Yes | `USDT` or `USDC` |
+| `chain` | string | Yes | `ETH`, `BSC`, `SOL` or `TRON` |
+| `token` | string | Yes | `USDT` or `USDC`. Only `USDT` on `TRON` |
 | `address` | string | Yes | The user's wallet address on that chain (26-64 chars) |
 | `amountCents` | number | Yes | Amount debited from the merchant balance, in USD cents. The network fee comes out of it |
 | `requestId` | string | Yes | Your idempotency key, 8-64 chars of `A-Z a-z 0-9 _ -`. Repeating it for the same user returns the first withdrawal |
@@ -90,6 +90,7 @@ Shared across the crypto withdraw endpoints of all your users.
 | 2522 | `ONCHAIN_MERCHANT_NOT_VERIFIED` | The merchant is not verified (HTTP 403) |
 | 2525 | `ONCHAIN_CLIENT_WITHDRAW_LIMIT` | A daily limit is reached. `details.scope` is `user` or `merchant`, `details.remainingCents` is what is left (HTTP 403) |
 | 2526 | `ONCHAIN_CLIENT_WITHDRAW_BUSY` | Another cashout of this merchant is being created, retry in a moment (HTTP 409) |
+| 2527 | `ONCHAIN_CLIENT_WITHDRAW_NO_CALLBACK` | No active callback URL or no API secret, so the cashout cannot be approved (HTTP 409) |
 | 2508 | `ONCHAIN_WITHDRAW_BELOW_MIN` | The user would receive less than \$1.00 after the fee (HTTP 400) |
 | 2509 | `ONCHAIN_WITHDRAW_INVALID_ADDRESS` | The address is not valid for this chain (HTTP 400) |
 | 2503 | `ONCHAIN_UNSUPPORTED_TOKEN` | The token is not supported on this chain (HTTP 400) |

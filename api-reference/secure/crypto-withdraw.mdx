@@ -1,9 +1,9 @@
 ---
 title: "Crypto Withdraw"
-description: "Cash out USDT or USDC from the merchant balance to an end user's address, straight from your server."
+description: "Cash out USDT or USDC from the merchant balance to an end user's address. Started from your server, confirmed through your approval call."
 ---
 
-Starts a cashout for the end user identified by `steamId`. The request comes from your own server, so **no approval call is made**: debit your user first, then call this. See [Cashouts](/guides/crypto#cashouts).
+Starts a cashout for the end user identified by `steamId`. Like every cashout, nothing is sent until your server answers the [approval call](/guides/crypto#the-approval-call) with `{ "action": "approve" }`. See [Cashouts](/guides/crypto#cashouts).
 
 **Authentication:** Merchant API Key (`api-key` header)
 **Scope:** `CORE_ACCESS`
@@ -28,8 +28,8 @@ api-key: ap_...
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `steamId` | string | Yes | SteamID64 of the end user |
-| `chain` | string | Yes | `ETH`, `BSC` or `SOL` |
-| `token` | string | Yes | `USDT` or `USDC` |
+| `chain` | string | Yes | `ETH`, `BSC`, `SOL` or `TRON` |
+| `token` | string | Yes | `USDT` or `USDC`. Only `USDT` on `TRON` |
 | `address` | string | Yes | The user's wallet address on that chain (26-64 chars) |
 | `amountCents` | number | Yes | Amount debited from the merchant balance, in USD cents. The network fee comes out of it |
 | `requestId` | string | Yes | Your idempotency key, 8-64 chars of `A-Z a-z 0-9 _ -`. Repeating it for the same user returns the first withdrawal |
@@ -45,7 +45,7 @@ api-key: ap_...
   "data": {
     "id": "b0f3c1e2-...",
     "type": "crypto_withdraw",
-    "status": "approved",
+    "status": "awaiting_approval",
     "steamId": "76561198012345678",
     "chain": "BSC",
     "token": "USDT",
@@ -66,13 +66,13 @@ api-key: ap_...
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `status` | string | Starts as `approved`, or `in_review` for a large cashout. See [Cashout statuses](/guides/crypto#cashout-statuses) |
+| `status` | string | Starts as `awaiting_approval`. See [Cashout statuses](/guides/crypto#cashout-statuses) |
 | `amountCents` | number | Debited from the merchant balance and held at once |
 | `feeCents` | number | Flat network fee of the chain, taken out of `amountCents` |
 | `receiveCents` | number | What the user receives: `amountCents - feeCents` |
 | `cryptoAmount` | string | Token amount that is sent |
 | `txHash` | string \| null | Set once the payout is `sent` |
-| `reason` | string \| null | Always `null` on this route |
+| `reason` | string \| null | Your refusal reason, when your server refused it |
 
 Every later status change arrives as a `{ "withdrawal": ... }` [webhook](/guides/crypto#webhooks). On `rejected`, `failed` and `cancelled` the full amount is back in the merchant balance.
 
@@ -93,6 +93,7 @@ Shared across the crypto withdraw endpoints of all your users.
 | 2522 | `ONCHAIN_MERCHANT_NOT_VERIFIED` | The merchant is not verified (HTTP 403) |
 | 2525 | `ONCHAIN_CLIENT_WITHDRAW_LIMIT` | A daily limit is reached. `details.scope` is `user` or `merchant`, `details.remainingCents` is what is left (HTTP 403) |
 | 2526 | `ONCHAIN_CLIENT_WITHDRAW_BUSY` | Another cashout of this merchant is being created, retry in a moment (HTTP 409) |
+| 2527 | `ONCHAIN_CLIENT_WITHDRAW_NO_CALLBACK` | No active callback URL or no API secret, so the cashout cannot be approved (HTTP 409) |
 | 2508 | `ONCHAIN_WITHDRAW_BELOW_MIN` | The user would receive less than \$1.00 after the fee (HTTP 400) |
 | 2509 | `ONCHAIN_WITHDRAW_INVALID_ADDRESS` | The address is not valid for this chain (HTTP 400) |
 | 2503 | `ONCHAIN_UNSUPPORTED_TOKEN` | The token is not supported on this chain (HTTP 400) |

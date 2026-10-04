@@ -255,6 +255,10 @@ In either case, the trade is marked `failed` with `error: "MERCHANT_REJECTED"`, 
 Only `4xx` responses (other than `408` and `429`) **or** one of the explicit rejection bodies above are treated as intentional rejections. A plain `2xx` with any other body counts as approval. `5xx` responses, `408`, `429` and timeouts (10 seconds per attempt) are retried, but only briefly: the approval callback gets 3 attempts in total, 5 seconds and then 10 seconds apart. If none succeeds, or an attempt is cut short on AssetPay's side (which ends the gate without the remaining attempts), the trade goes to `failed` with `error: "APPROVAL_TIMEOUT"` and the merchant wallet is refunded.
 </Note>
 
+<Warning>
+Crypto cashout approvals are stricter: a plain `2xx` **refuses** a cashout, and only `{ "action": "approve" }` approves it. See [The approval call](/guides/crypto#the-approval-call).
+</Warning>
+
 ## Idempotency
 
 You may receive the same callback more than once (network retries, duplicate deliveries). Your handler should be idempotent. Track processed (trade, status) pairs and skip duplicates:

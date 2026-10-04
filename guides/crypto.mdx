@@ -84,16 +84,18 @@ Below-minimum deposits that reach the minimum together pay one fee between them.
 
 A cashout debits **your merchant balance**. Debit your own user before you let it go through.
 
-There are two ways to start one, and they differ in who is trusted:
+There are two ways to start one:
 
-| Route | Called by | Approval |
-|-------|-----------|----------|
-| `POST /client/crypto/withdraw` | The end user, with the client token | AssetPay asks your server first |
-| `POST /secure/crypto/withdraw` | Your server, with your API key | None. The call itself is your approval |
+| Route | Called by |
+|-------|-----------|
+| `POST /client/crypto/withdraw` | The end user, with the client token |
+| `POST /secure/crypto/withdraw` | Your server, with your API key and the user's `steamId` |
+
+Both work the same way from there: AssetPay asks your server to approve every cashout before anything is sent, the same way it asks for a skin withdrawal. A cashout cannot be taken back once it is on chain, so even a request from your own server is confirmed through your callback URL.
 
 ### The approval call
 
-A cashout requested with a client token starts as `awaiting_approval`. The amount is already held from your merchant balance, and nothing is sent until your server answers.
+Every cashout starts as `awaiting_approval`. The amount is already held from your merchant balance, and nothing is sent until your server answers.
 
 AssetPay sends a signed `POST` to your callback URL, the same URL and the same [signature](/guides/callbacks#signature-verification) as the skin withdrawal approval:
 
@@ -125,16 +127,21 @@ Tell it apart from a skin approval by the body: a cashout carries `withdrawal`, 
 
 | Your answer | Result |
 |-------------|--------|
-| `2xx` | Approved. The payout is sent |
-| `4xx` (except `408` and `429`) | Refused. The held amount returns to your balance |
+| `2xx` with `{ "action": "approve" }` | Approved. The payout is sent |
 | `2xx` with `{ "action": "reject", "reason": "..." }` | Refused, with your reason stored on the withdrawal |
+| `2xx` with any other body, or none | Refused |
+| `4xx` (except `408` and `429`) | Refused. The held amount returns to your balance |
 | `408`, `429`, `5xx`, timeout | Retried. Three attempts in total, 10 second timeout each |
 | No usable answer after three attempts | Refused |
 
-Inside your handler: verify the signature, check that `steamId` has at least `amountCents` on your platform, debit them, then answer `200`. If you approve and the payout later ends as `failed`, `rejected` or `cancelled`, give the user their balance back when that webhook arrives.
+Inside your handler: verify the signature, check that `steamId` has at least `amountCents` on your platform, debit them, then answer `200` with `{ "action": "approve" }`. If you approve and the payout later ends as `failed`, `rejected` or `cancelled`, give the user their balance back when that webhook arrives.
 
 <Warning>
-You need an active callback URL and an API secret. Without them every client cashout is refused with the reason `merchant_no_callback_url`.
+A bare `200` does **not** approve a cashout. This differs from the skin withdrawal approval on purpose: a handler that answers `200` to every event must never send money on chain by accident. Answer with `{ "action": "approve" }` explicitly.
+</Warning>
+
+<Warning>
+You need an active callback URL and an API secret. Without them every cashout request is refused up front with `ONCHAIN_CLIENT_WITHDRAW_NO_CALLBACK` (409). A callback URL that was switched off after repeated delivery failures counts as missing: save it again in the dashboard.
 </Warning>
 
 ### Fees and amounts
@@ -145,7 +152,16 @@ You need an active callback URL and an API secret. Without them every client cas
 receiveCents = amountCents - feeCents
 ```
 
-The fee depends on the chain and can be zero. Read it from the response rather than hard-coding it. The amount the user receives must be at least \$1.00, otherwise the request fails with `ONCHAIN_WITHDRAW_BELOW_MIN`.
+The current fee per chain:
+
+| Chain | Cashout fee |
+|-------|-------------|
+| Ethereum | \$1.00 |
+| BNB Smart Chain | none |
+| Solana | none |
+| Tron | \$1.50 (USDT only) |
+
+The fee is the same for every amount. It can change, so read `feeCents` from the response rather than hard-coding it. The amount the user receives must be at least \$1.00, otherwise the request fails with `ONCHAIN_WITHDRAW_BELOW_MIN`.
 
 ### Safe retries
 
@@ -213,4 +229,5 @@ Webhooks can arrive more than once. Key your handling on `id` plus `status`.
 | 2524 | `ONCHAIN_CLIENT_WITHDRAW_DISABLED` | 503 | Cashouts are switched off |
 | 2525 | `ONCHAIN_CLIENT_WITHDRAW_LIMIT` | 403 | A daily limit is reached, see `details` |
 | 2526 | `ONCHAIN_CLIENT_WITHDRAW_BUSY` | 409 | Another cashout of yours is being created. Retry in a moment |
+| 2527 | `ONCHAIN_CLIENT_WITHDRAW_NO_CALLBACK` | 409 | You have no active callback URL or no API secret, so the cashout cannot be approved |
 | 1600 | `INSUFFICIENT_BALANCE` | 400 | Your merchant balance does not cover the cashout |
