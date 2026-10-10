@@ -5549,8 +5549,10 @@
                         "status": {
                           "type": "string",
                           "enum": [
-                            "cancelled"
-                          ]
+                            "cancelled",
+                            "cancel_requested"
+                          ],
+                          "description": "cancel_requested: the supplier only took a request the seller may still beat by delivering. The item stays pending and refunds in full via the trade webhook once the seller's side cancels."
                         }
                       },
                       "required": [
@@ -5984,6 +5986,10 @@
                         "cancelled": {
                           "type": "integer"
                         },
+                        "cancelRequested": {
+                          "type": "integer",
+                          "description": "Items whose cancel is only a request so far"
+                        },
                         "failed": {
                           "type": "integer"
                         },
@@ -6002,8 +6008,10 @@
                                 "type": "string",
                                 "enum": [
                                   "cancelled",
+                                  "cancel_requested",
                                   "failed"
-                                ]
+                                ],
+                                "description": "cancel_requested: the supplier only took a request the seller may still beat by delivering. The item stays pending and refunds in full via the trade webhook once the seller's side cancels."
                               },
                               "reason": {
                                 "type": "string",
@@ -6021,6 +6029,7 @@
                         "tradeId",
                         "requested",
                         "cancelled",
+                        "cancelRequested",
                         "failed",
                         "items"
                       ]
@@ -20554,8 +20563,10 @@
                         "status": {
                           "type": "string",
                           "enum": [
-                            "cancelled"
-                          ]
+                            "cancelled",
+                            "cancel_requested"
+                          ],
+                          "description": "cancel_requested: the supplier only took a request the seller may still beat by delivering. The item stays pending and refunds in full via the trade webhook once the seller's side cancels."
                         }
                       },
                       "required": [
@@ -20989,6 +21000,10 @@
                         "cancelled": {
                           "type": "integer"
                         },
+                        "cancelRequested": {
+                          "type": "integer",
+                          "description": "Items whose cancel is only a request so far"
+                        },
                         "failed": {
                           "type": "integer"
                         },
@@ -21007,8 +21022,10 @@
                                 "type": "string",
                                 "enum": [
                                   "cancelled",
+                                  "cancel_requested",
                                   "failed"
-                                ]
+                                ],
+                                "description": "cancel_requested: the supplier only took a request the seller may still beat by delivering. The item stays pending and refunds in full via the trade webhook once the seller's side cancels."
                               },
                               "reason": {
                                 "type": "string",
@@ -21026,6 +21043,7 @@
                         "tradeId",
                         "requested",
                         "cancelled",
+                        "cancelRequested",
                         "failed",
                         "items"
                       ]
