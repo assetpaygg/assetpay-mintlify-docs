@@ -1598,9 +1598,21 @@
                                   "BUYER_TRADE_RESTRICTED",
                                   "OFFER_NOT_ACCEPTED",
                                   "MARKET_UNAVAILABLE",
-                                  "PURCHASE_FAILED"
+                                  "PURCHASE_FAILED",
+                                  "SELLER_FAILED"
                                 ],
                                 "description": "Failure code for a failed withdraw item (withdrawals only)"
+                              },
+                              "quickBuyable": {
+                                "type": "boolean",
+                                "enum": [
+                                  false
+                                ],
+                                "description": "Market listings only. Present (false) on a row no quick withdrawal will take: it is priced far under every other source and has almost always sold already, so a quick-withdraw maxPrice copied from it is refused. The row can still be withdrawn by its id."
+                              },
+                              "minPrice": {
+                                "type": "number",
+                                "description": "Quick withdrawals only. Set on a failed item whose maxPrice was under the cheapest listing that would fill it (error NO_LISTING_AT_PRICE, LISTING_UNAVAILABLE or PRICE_CHANGED): the per-unit maxPrice, in USD and fee-inclusive like maxPrice itself, that would have cleared when it failed. Absent when your bid still cleared and the item was simply taken first."
                               },
                               "marketPrice": {
                                 "type": "number",
@@ -2449,9 +2461,21 @@
                                   "BUYER_TRADE_RESTRICTED",
                                   "OFFER_NOT_ACCEPTED",
                                   "MARKET_UNAVAILABLE",
-                                  "PURCHASE_FAILED"
+                                  "PURCHASE_FAILED",
+                                  "SELLER_FAILED"
                                 ],
                                 "description": "Failure code for a failed withdraw item (withdrawals only)"
+                              },
+                              "quickBuyable": {
+                                "type": "boolean",
+                                "enum": [
+                                  false
+                                ],
+                                "description": "Market listings only. Present (false) on a row no quick withdrawal will take: it is priced far under every other source and has almost always sold already, so a quick-withdraw maxPrice copied from it is refused. The row can still be withdrawn by its id."
+                              },
+                              "minPrice": {
+                                "type": "number",
+                                "description": "Quick withdrawals only. Set on a failed item whose maxPrice was under the cheapest listing that would fill it (error NO_LISTING_AT_PRICE, LISTING_UNAVAILABLE or PRICE_CHANGED): the per-unit maxPrice, in USD and fee-inclusive like maxPrice itself, that would have cleared when it failed. Absent when your bid still cleared and the item was simply taken first."
                               },
                               "marketPrice": {
                                 "type": "number",
@@ -2696,6 +2720,7 @@
                             "OFFER_NOT_ACCEPTED",
                             "MARKET_UNAVAILABLE",
                             "PURCHASE_FAILED",
+                            "SELLER_FAILED",
                             "USER_TRADE_RESTRICTED",
                             "USER_INVENTORY_PRIVATE",
                             "USER_ESCROW",
@@ -2856,9 +2881,21 @@
                                         "BUYER_TRADE_RESTRICTED",
                                         "OFFER_NOT_ACCEPTED",
                                         "MARKET_UNAVAILABLE",
-                                        "PURCHASE_FAILED"
+                                        "PURCHASE_FAILED",
+                                        "SELLER_FAILED"
                                       ],
                                       "description": "Failure code for a failed withdraw item (withdrawals only)"
+                                    },
+                                    "quickBuyable": {
+                                      "type": "boolean",
+                                      "enum": [
+                                        false
+                                      ],
+                                      "description": "Market listings only. Present (false) on a row no quick withdrawal will take: it is priced far under every other source and has almost always sold already, so a quick-withdraw maxPrice copied from it is refused. The row can still be withdrawn by its id."
+                                    },
+                                    "minPrice": {
+                                      "type": "number",
+                                      "description": "Quick withdrawals only. Set on a failed item whose maxPrice was under the cheapest listing that would fill it (error NO_LISTING_AT_PRICE, LISTING_UNAVAILABLE or PRICE_CHANGED): the per-unit maxPrice, in USD and fee-inclusive like maxPrice itself, that would have cleared when it failed. Absent when your bid still cleared and the item was simply taken first."
                                     },
                                     "marketPrice": {
                                       "type": "number",
@@ -3103,6 +3140,7 @@
                                   "OFFER_NOT_ACCEPTED",
                                   "MARKET_UNAVAILABLE",
                                   "PURCHASE_FAILED",
+                                  "SELLER_FAILED",
                                   "USER_TRADE_RESTRICTED",
                                   "USER_INVENTORY_PRIVATE",
                                   "USER_ESCROW",
@@ -3844,9 +3882,21 @@
                                   "BUYER_TRADE_RESTRICTED",
                                   "OFFER_NOT_ACCEPTED",
                                   "MARKET_UNAVAILABLE",
-                                  "PURCHASE_FAILED"
+                                  "PURCHASE_FAILED",
+                                  "SELLER_FAILED"
                                 ],
                                 "description": "Failure code for a failed withdraw item (withdrawals only)"
+                              },
+                              "quickBuyable": {
+                                "type": "boolean",
+                                "enum": [
+                                  false
+                                ],
+                                "description": "Market listings only. Present (false) on a row no quick withdrawal will take: it is priced far under every other source and has almost always sold already, so a quick-withdraw maxPrice copied from it is refused. The row can still be withdrawn by its id."
+                              },
+                              "minPrice": {
+                                "type": "number",
+                                "description": "Quick withdrawals only. Set on a failed item whose maxPrice was under the cheapest listing that would fill it (error NO_LISTING_AT_PRICE, LISTING_UNAVAILABLE or PRICE_CHANGED): the per-unit maxPrice, in USD and fee-inclusive like maxPrice itself, that would have cleared when it failed. Absent when your bid still cleared and the item was simply taken first."
                               },
                               "marketPrice": {
                                 "type": "number",
@@ -4091,6 +4141,7 @@
                             "OFFER_NOT_ACCEPTED",
                             "MARKET_UNAVAILABLE",
                             "PURCHASE_FAILED",
+                            "SELLER_FAILED",
                             "USER_TRADE_RESTRICTED",
                             "USER_INVENTORY_PRIVATE",
                             "USER_ESCROW",
@@ -4753,9 +4804,21 @@
                                   "BUYER_TRADE_RESTRICTED",
                                   "OFFER_NOT_ACCEPTED",
                                   "MARKET_UNAVAILABLE",
-                                  "PURCHASE_FAILED"
+                                  "PURCHASE_FAILED",
+                                  "SELLER_FAILED"
                                 ],
                                 "description": "Failure code for a failed withdraw item (withdrawals only)"
+                              },
+                              "quickBuyable": {
+                                "type": "boolean",
+                                "enum": [
+                                  false
+                                ],
+                                "description": "Market listings only. Present (false) on a row no quick withdrawal will take: it is priced far under every other source and has almost always sold already, so a quick-withdraw maxPrice copied from it is refused. The row can still be withdrawn by its id."
+                              },
+                              "minPrice": {
+                                "type": "number",
+                                "description": "Quick withdrawals only. Set on a failed item whose maxPrice was under the cheapest listing that would fill it (error NO_LISTING_AT_PRICE, LISTING_UNAVAILABLE or PRICE_CHANGED): the per-unit maxPrice, in USD and fee-inclusive like maxPrice itself, that would have cleared when it failed. Absent when your bid still cleared and the item was simply taken first."
                               },
                               "marketPrice": {
                                 "type": "number",
@@ -5000,6 +5063,7 @@
                             "OFFER_NOT_ACCEPTED",
                             "MARKET_UNAVAILABLE",
                             "PURCHASE_FAILED",
+                            "SELLER_FAILED",
                             "USER_TRADE_RESTRICTED",
                             "USER_INVENTORY_PRIVATE",
                             "USER_ESCROW",
@@ -6547,9 +6611,21 @@
                                   "BUYER_TRADE_RESTRICTED",
                                   "OFFER_NOT_ACCEPTED",
                                   "MARKET_UNAVAILABLE",
-                                  "PURCHASE_FAILED"
+                                  "PURCHASE_FAILED",
+                                  "SELLER_FAILED"
                                 ],
                                 "description": "Failure code for a failed withdraw item (withdrawals only)"
+                              },
+                              "quickBuyable": {
+                                "type": "boolean",
+                                "enum": [
+                                  false
+                                ],
+                                "description": "Market listings only. Present (false) on a row no quick withdrawal will take: it is priced far under every other source and has almost always sold already, so a quick-withdraw maxPrice copied from it is refused. The row can still be withdrawn by its id."
+                              },
+                              "minPrice": {
+                                "type": "number",
+                                "description": "Quick withdrawals only. Set on a failed item whose maxPrice was under the cheapest listing that would fill it (error NO_LISTING_AT_PRICE, LISTING_UNAVAILABLE or PRICE_CHANGED): the per-unit maxPrice, in USD and fee-inclusive like maxPrice itself, that would have cleared when it failed. Absent when your bid still cleared and the item was simply taken first."
                               },
                               "marketPrice": {
                                 "type": "number",
@@ -7235,9 +7311,21 @@
                               "BUYER_TRADE_RESTRICTED",
                               "OFFER_NOT_ACCEPTED",
                               "MARKET_UNAVAILABLE",
-                              "PURCHASE_FAILED"
+                              "PURCHASE_FAILED",
+                              "SELLER_FAILED"
                             ],
                             "description": "Failure code for a failed withdraw item (withdrawals only)"
+                          },
+                          "quickBuyable": {
+                            "type": "boolean",
+                            "enum": [
+                              false
+                            ],
+                            "description": "Market listings only. Present (false) on a row no quick withdrawal will take: it is priced far under every other source and has almost always sold already, so a quick-withdraw maxPrice copied from it is refused. The row can still be withdrawn by its id."
+                          },
+                          "minPrice": {
+                            "type": "number",
+                            "description": "Quick withdrawals only. Set on a failed item whose maxPrice was under the cheapest listing that would fill it (error NO_LISTING_AT_PRICE, LISTING_UNAVAILABLE or PRICE_CHANGED): the per-unit maxPrice, in USD and fee-inclusive like maxPrice itself, that would have cleared when it failed. Absent when your bid still cleared and the item was simply taken first."
                           },
                           "marketPrice": {
                             "type": "number",
@@ -7982,9 +8070,21 @@
                                         "BUYER_TRADE_RESTRICTED",
                                         "OFFER_NOT_ACCEPTED",
                                         "MARKET_UNAVAILABLE",
-                                        "PURCHASE_FAILED"
+                                        "PURCHASE_FAILED",
+                                        "SELLER_FAILED"
                                       ],
                                       "description": "Failure code for a failed withdraw item (withdrawals only)"
+                                    },
+                                    "quickBuyable": {
+                                      "type": "boolean",
+                                      "enum": [
+                                        false
+                                      ],
+                                      "description": "Market listings only. Present (false) on a row no quick withdrawal will take: it is priced far under every other source and has almost always sold already, so a quick-withdraw maxPrice copied from it is refused. The row can still be withdrawn by its id."
+                                    },
+                                    "minPrice": {
+                                      "type": "number",
+                                      "description": "Quick withdrawals only. Set on a failed item whose maxPrice was under the cheapest listing that would fill it (error NO_LISTING_AT_PRICE, LISTING_UNAVAILABLE or PRICE_CHANGED): the per-unit maxPrice, in USD and fee-inclusive like maxPrice itself, that would have cleared when it failed. Absent when your bid still cleared and the item was simply taken first."
                                     },
                                     "marketPrice": {
                                       "type": "number",
@@ -8229,6 +8329,7 @@
                                   "OFFER_NOT_ACCEPTED",
                                   "MARKET_UNAVAILABLE",
                                   "PURCHASE_FAILED",
+                                  "SELLER_FAILED",
                                   "USER_TRADE_RESTRICTED",
                                   "USER_INVENTORY_PRIVATE",
                                   "USER_ESCROW",
@@ -8759,9 +8860,21 @@
                                       "BUYER_TRADE_RESTRICTED",
                                       "OFFER_NOT_ACCEPTED",
                                       "MARKET_UNAVAILABLE",
-                                      "PURCHASE_FAILED"
+                                      "PURCHASE_FAILED",
+                                      "SELLER_FAILED"
                                     ],
                                     "description": "Failure code for a failed withdraw item (withdrawals only)"
+                                  },
+                                  "quickBuyable": {
+                                    "type": "boolean",
+                                    "enum": [
+                                      false
+                                    ],
+                                    "description": "Market listings only. Present (false) on a row no quick withdrawal will take: it is priced far under every other source and has almost always sold already, so a quick-withdraw maxPrice copied from it is refused. The row can still be withdrawn by its id."
+                                  },
+                                  "minPrice": {
+                                    "type": "number",
+                                    "description": "Quick withdrawals only. Set on a failed item whose maxPrice was under the cheapest listing that would fill it (error NO_LISTING_AT_PRICE, LISTING_UNAVAILABLE or PRICE_CHANGED): the per-unit maxPrice, in USD and fee-inclusive like maxPrice itself, that would have cleared when it failed. Absent when your bid still cleared and the item was simply taken first."
                                   },
                                   "marketPrice": {
                                     "type": "number",
@@ -9006,6 +9119,7 @@
                                 "OFFER_NOT_ACCEPTED",
                                 "MARKET_UNAVAILABLE",
                                 "PURCHASE_FAILED",
+                                "SELLER_FAILED",
                                 "USER_TRADE_RESTRICTED",
                                 "USER_INVENTORY_PRIVATE",
                                 "USER_ESCROW",
@@ -9183,9 +9297,21 @@
                                         "BUYER_TRADE_RESTRICTED",
                                         "OFFER_NOT_ACCEPTED",
                                         "MARKET_UNAVAILABLE",
-                                        "PURCHASE_FAILED"
+                                        "PURCHASE_FAILED",
+                                        "SELLER_FAILED"
                                       ],
                                       "description": "Failure code for a failed withdraw item (withdrawals only)"
+                                    },
+                                    "quickBuyable": {
+                                      "type": "boolean",
+                                      "enum": [
+                                        false
+                                      ],
+                                      "description": "Market listings only. Present (false) on a row no quick withdrawal will take: it is priced far under every other source and has almost always sold already, so a quick-withdraw maxPrice copied from it is refused. The row can still be withdrawn by its id."
+                                    },
+                                    "minPrice": {
+                                      "type": "number",
+                                      "description": "Quick withdrawals only. Set on a failed item whose maxPrice was under the cheapest listing that would fill it (error NO_LISTING_AT_PRICE, LISTING_UNAVAILABLE or PRICE_CHANGED): the per-unit maxPrice, in USD and fee-inclusive like maxPrice itself, that would have cleared when it failed. Absent when your bid still cleared and the item was simply taken first."
                                     },
                                     "marketPrice": {
                                       "type": "number",
@@ -9430,6 +9556,7 @@
                                   "OFFER_NOT_ACCEPTED",
                                   "MARKET_UNAVAILABLE",
                                   "PURCHASE_FAILED",
+                                  "SELLER_FAILED",
                                   "USER_TRADE_RESTRICTED",
                                   "USER_INVENTORY_PRIVATE",
                                   "USER_ESCROW",
@@ -9991,9 +10118,21 @@
                                   "BUYER_TRADE_RESTRICTED",
                                   "OFFER_NOT_ACCEPTED",
                                   "MARKET_UNAVAILABLE",
-                                  "PURCHASE_FAILED"
+                                  "PURCHASE_FAILED",
+                                  "SELLER_FAILED"
                                 ],
                                 "description": "Failure code for a failed withdraw item (withdrawals only)"
+                              },
+                              "quickBuyable": {
+                                "type": "boolean",
+                                "enum": [
+                                  false
+                                ],
+                                "description": "Market listings only. Present (false) on a row no quick withdrawal will take: it is priced far under every other source and has almost always sold already, so a quick-withdraw maxPrice copied from it is refused. The row can still be withdrawn by its id."
+                              },
+                              "minPrice": {
+                                "type": "number",
+                                "description": "Quick withdrawals only. Set on a failed item whose maxPrice was under the cheapest listing that would fill it (error NO_LISTING_AT_PRICE, LISTING_UNAVAILABLE or PRICE_CHANGED): the per-unit maxPrice, in USD and fee-inclusive like maxPrice itself, that would have cleared when it failed. Absent when your bid still cleared and the item was simply taken first."
                               },
                               "marketPrice": {
                                 "type": "number",
@@ -10757,9 +10896,21 @@
                                         "BUYER_TRADE_RESTRICTED",
                                         "OFFER_NOT_ACCEPTED",
                                         "MARKET_UNAVAILABLE",
-                                        "PURCHASE_FAILED"
+                                        "PURCHASE_FAILED",
+                                        "SELLER_FAILED"
                                       ],
                                       "description": "Failure code for a failed withdraw item (withdrawals only)"
+                                    },
+                                    "quickBuyable": {
+                                      "type": "boolean",
+                                      "enum": [
+                                        false
+                                      ],
+                                      "description": "Market listings only. Present (false) on a row no quick withdrawal will take: it is priced far under every other source and has almost always sold already, so a quick-withdraw maxPrice copied from it is refused. The row can still be withdrawn by its id."
+                                    },
+                                    "minPrice": {
+                                      "type": "number",
+                                      "description": "Quick withdrawals only. Set on a failed item whose maxPrice was under the cheapest listing that would fill it (error NO_LISTING_AT_PRICE, LISTING_UNAVAILABLE or PRICE_CHANGED): the per-unit maxPrice, in USD and fee-inclusive like maxPrice itself, that would have cleared when it failed. Absent when your bid still cleared and the item was simply taken first."
                                     },
                                     "marketPrice": {
                                       "type": "number",
@@ -11004,6 +11155,7 @@
                                   "OFFER_NOT_ACCEPTED",
                                   "MARKET_UNAVAILABLE",
                                   "PURCHASE_FAILED",
+                                  "SELLER_FAILED",
                                   "USER_TRADE_RESTRICTED",
                                   "USER_INVENTORY_PRIVATE",
                                   "USER_ESCROW",
@@ -12006,9 +12158,21 @@
                                   "BUYER_TRADE_RESTRICTED",
                                   "OFFER_NOT_ACCEPTED",
                                   "MARKET_UNAVAILABLE",
-                                  "PURCHASE_FAILED"
+                                  "PURCHASE_FAILED",
+                                  "SELLER_FAILED"
                                 ],
                                 "description": "Failure code for a failed withdraw item (withdrawals only)"
+                              },
+                              "quickBuyable": {
+                                "type": "boolean",
+                                "enum": [
+                                  false
+                                ],
+                                "description": "Market listings only. Present (false) on a row no quick withdrawal will take: it is priced far under every other source and has almost always sold already, so a quick-withdraw maxPrice copied from it is refused. The row can still be withdrawn by its id."
+                              },
+                              "minPrice": {
+                                "type": "number",
+                                "description": "Quick withdrawals only. Set on a failed item whose maxPrice was under the cheapest listing that would fill it (error NO_LISTING_AT_PRICE, LISTING_UNAVAILABLE or PRICE_CHANGED): the per-unit maxPrice, in USD and fee-inclusive like maxPrice itself, that would have cleared when it failed. Absent when your bid still cleared and the item was simply taken first."
                               },
                               "marketPrice": {
                                 "type": "number",
@@ -12694,9 +12858,21 @@
                               "BUYER_TRADE_RESTRICTED",
                               "OFFER_NOT_ACCEPTED",
                               "MARKET_UNAVAILABLE",
-                              "PURCHASE_FAILED"
+                              "PURCHASE_FAILED",
+                              "SELLER_FAILED"
                             ],
                             "description": "Failure code for a failed withdraw item (withdrawals only)"
+                          },
+                          "quickBuyable": {
+                            "type": "boolean",
+                            "enum": [
+                              false
+                            ],
+                            "description": "Market listings only. Present (false) on a row no quick withdrawal will take: it is priced far under every other source and has almost always sold already, so a quick-withdraw maxPrice copied from it is refused. The row can still be withdrawn by its id."
+                          },
+                          "minPrice": {
+                            "type": "number",
+                            "description": "Quick withdrawals only. Set on a failed item whose maxPrice was under the cheapest listing that would fill it (error NO_LISTING_AT_PRICE, LISTING_UNAVAILABLE or PRICE_CHANGED): the per-unit maxPrice, in USD and fee-inclusive like maxPrice itself, that would have cleared when it failed. Absent when your bid still cleared and the item was simply taken first."
                           },
                           "marketPrice": {
                             "type": "number",
@@ -17513,9 +17689,21 @@
                                   "BUYER_TRADE_RESTRICTED",
                                   "OFFER_NOT_ACCEPTED",
                                   "MARKET_UNAVAILABLE",
-                                  "PURCHASE_FAILED"
+                                  "PURCHASE_FAILED",
+                                  "SELLER_FAILED"
                                 ],
                                 "description": "Failure code for a failed withdraw item (withdrawals only)"
+                              },
+                              "quickBuyable": {
+                                "type": "boolean",
+                                "enum": [
+                                  false
+                                ],
+                                "description": "Market listings only. Present (false) on a row no quick withdrawal will take: it is priced far under every other source and has almost always sold already, so a quick-withdraw maxPrice copied from it is refused. The row can still be withdrawn by its id."
+                              },
+                              "minPrice": {
+                                "type": "number",
+                                "description": "Quick withdrawals only. Set on a failed item whose maxPrice was under the cheapest listing that would fill it (error NO_LISTING_AT_PRICE, LISTING_UNAVAILABLE or PRICE_CHANGED): the per-unit maxPrice, in USD and fee-inclusive like maxPrice itself, that would have cleared when it failed. Absent when your bid still cleared and the item was simply taken first."
                               },
                               "marketPrice": {
                                 "type": "number",
@@ -17760,6 +17948,7 @@
                             "OFFER_NOT_ACCEPTED",
                             "MARKET_UNAVAILABLE",
                             "PURCHASE_FAILED",
+                            "SELLER_FAILED",
                             "USER_TRADE_RESTRICTED",
                             "USER_INVENTORY_PRIVATE",
                             "USER_ESCROW",
@@ -17920,9 +18109,21 @@
                                         "BUYER_TRADE_RESTRICTED",
                                         "OFFER_NOT_ACCEPTED",
                                         "MARKET_UNAVAILABLE",
-                                        "PURCHASE_FAILED"
+                                        "PURCHASE_FAILED",
+                                        "SELLER_FAILED"
                                       ],
                                       "description": "Failure code for a failed withdraw item (withdrawals only)"
+                                    },
+                                    "quickBuyable": {
+                                      "type": "boolean",
+                                      "enum": [
+                                        false
+                                      ],
+                                      "description": "Market listings only. Present (false) on a row no quick withdrawal will take: it is priced far under every other source and has almost always sold already, so a quick-withdraw maxPrice copied from it is refused. The row can still be withdrawn by its id."
+                                    },
+                                    "minPrice": {
+                                      "type": "number",
+                                      "description": "Quick withdrawals only. Set on a failed item whose maxPrice was under the cheapest listing that would fill it (error NO_LISTING_AT_PRICE, LISTING_UNAVAILABLE or PRICE_CHANGED): the per-unit maxPrice, in USD and fee-inclusive like maxPrice itself, that would have cleared when it failed. Absent when your bid still cleared and the item was simply taken first."
                                     },
                                     "marketPrice": {
                                       "type": "number",
@@ -18167,6 +18368,7 @@
                                   "OFFER_NOT_ACCEPTED",
                                   "MARKET_UNAVAILABLE",
                                   "PURCHASE_FAILED",
+                                  "SELLER_FAILED",
                                   "USER_TRADE_RESTRICTED",
                                   "USER_INVENTORY_PRIVATE",
                                   "USER_ESCROW",
@@ -18832,9 +19034,21 @@
                                   "BUYER_TRADE_RESTRICTED",
                                   "OFFER_NOT_ACCEPTED",
                                   "MARKET_UNAVAILABLE",
-                                  "PURCHASE_FAILED"
+                                  "PURCHASE_FAILED",
+                                  "SELLER_FAILED"
                                 ],
                                 "description": "Failure code for a failed withdraw item (withdrawals only)"
+                              },
+                              "quickBuyable": {
+                                "type": "boolean",
+                                "enum": [
+                                  false
+                                ],
+                                "description": "Market listings only. Present (false) on a row no quick withdrawal will take: it is priced far under every other source and has almost always sold already, so a quick-withdraw maxPrice copied from it is refused. The row can still be withdrawn by its id."
+                              },
+                              "minPrice": {
+                                "type": "number",
+                                "description": "Quick withdrawals only. Set on a failed item whose maxPrice was under the cheapest listing that would fill it (error NO_LISTING_AT_PRICE, LISTING_UNAVAILABLE or PRICE_CHANGED): the per-unit maxPrice, in USD and fee-inclusive like maxPrice itself, that would have cleared when it failed. Absent when your bid still cleared and the item was simply taken first."
                               },
                               "marketPrice": {
                                 "type": "number",
@@ -19079,6 +19293,7 @@
                             "OFFER_NOT_ACCEPTED",
                             "MARKET_UNAVAILABLE",
                             "PURCHASE_FAILED",
+                            "SELLER_FAILED",
                             "USER_TRADE_RESTRICTED",
                             "USER_INVENTORY_PRIVATE",
                             "USER_ESCROW",
@@ -19665,9 +19880,21 @@
                                   "BUYER_TRADE_RESTRICTED",
                                   "OFFER_NOT_ACCEPTED",
                                   "MARKET_UNAVAILABLE",
-                                  "PURCHASE_FAILED"
+                                  "PURCHASE_FAILED",
+                                  "SELLER_FAILED"
                                 ],
                                 "description": "Failure code for a failed withdraw item (withdrawals only)"
+                              },
+                              "quickBuyable": {
+                                "type": "boolean",
+                                "enum": [
+                                  false
+                                ],
+                                "description": "Market listings only. Present (false) on a row no quick withdrawal will take: it is priced far under every other source and has almost always sold already, so a quick-withdraw maxPrice copied from it is refused. The row can still be withdrawn by its id."
+                              },
+                              "minPrice": {
+                                "type": "number",
+                                "description": "Quick withdrawals only. Set on a failed item whose maxPrice was under the cheapest listing that would fill it (error NO_LISTING_AT_PRICE, LISTING_UNAVAILABLE or PRICE_CHANGED): the per-unit maxPrice, in USD and fee-inclusive like maxPrice itself, that would have cleared when it failed. Absent when your bid still cleared and the item was simply taken first."
                               },
                               "marketPrice": {
                                 "type": "number",
@@ -19912,6 +20139,7 @@
                             "OFFER_NOT_ACCEPTED",
                             "MARKET_UNAVAILABLE",
                             "PURCHASE_FAILED",
+                            "SELLER_FAILED",
                             "USER_TRADE_RESTRICTED",
                             "USER_INVENTORY_PRIVATE",
                             "USER_ESCROW",
@@ -22679,6 +22907,10 @@
                                   "usd": {
                                     "type": "number"
                                   },
+                                  "netUsd": {
+                                    "type": "number",
+                                    "description": "What moved on the wallet: an on-chain deposit fee comes out of usd, a withdrawal fee is added on top"
+                                  },
                                   "crypto": {
                                     "type": "string"
                                   },
@@ -22697,6 +22929,7 @@
                                 },
                                 "required": [
                                   "usd",
+                                  "netUsd",
                                   "crypto",
                                   "token",
                                   "chain"
@@ -23214,6 +23447,10 @@
                             "usd": {
                               "type": "number"
                             },
+                            "netUsd": {
+                              "type": "number",
+                              "description": "What moved on the wallet: an on-chain deposit fee comes out of usd, a withdrawal fee is added on top"
+                            },
                             "crypto": {
                               "type": "string"
                             },
@@ -23235,6 +23472,7 @@
                           },
                           "required": [
                             "usd",
+                            "netUsd",
                             "crypto",
                             "token",
                             "chain",
