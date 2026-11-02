@@ -131,6 +131,8 @@ This returns individual listings with different float values, stickers, and pric
 
 ## Pricing in Market Items
 
+CS2 market items also carry `offer.revertRefundPercent`: the share of the price refunded if the buyer reverses the trade after delivery, 0-100. It can be 0. See [Trade Reversals](/guides/withdrawals#trade-reversals).
+
 For market items (withdrawals), the `offer.price` is what it costs to buy this item. This is the amount that gets deducted from the merchant's wallet balance.
 
 The `delivery` field (CS2 only) indicates how the item will be sourced:

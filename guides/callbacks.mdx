@@ -197,7 +197,7 @@ Deposit callbacks carry `preCredit` from creation and `pendingCredit` once the t
 | `failed` | Trade did not go through. Refund `totalPrice` to the user's balance if you previously deducted it. |
 | `declined` | The user declined or let the Steam offer expire (CS2 only; a declined Rust offer ends as `failed`). Items AssetPay fills from its own stock are refunded in full. Items bought from a marketplace are refunded minus the penalty the marketplace kept for the decline. Decide your own user-facing refund. |
 | `canceled` | Trade was canceled before processing. Refund `totalPrice` to the user's balance if you previously deducted it. |
-| `reverted` | A delivered withdrawal was reversed. Check `revertedBy`: with `supplier` your merchant wallet is refunded once the supplier reports the refund, so refund `totalPrice`; with `user` (Steam rolled back the trade after the user accepted it), items bought from a marketplace are forfeited and your wallet is not refunded, while CS2 items AssetPay fills from its own stock are refunded in full. |
+| `reverted` | A delivered withdrawal was reversed. Check `revertedBy`: with `supplier` your merchant wallet is refunded once the supplier reports the refund, so refund `totalPrice`; with `user` (Steam rolled back the trade after the user accepted it), your wallet gets back the item's `revertRefundPercent` share of its price, possibly 0, and `refundAmount` on the item says what came back. |
 
 A withdrawal moves `initiated → pending → active → hold → completed`. The intermediate statuses (`pending`, `active`) are progress signals and may be skipped depending on the provider and delivery mode, so drive balance changes off `initiated` and the terminal states.
 

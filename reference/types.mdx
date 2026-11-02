@@ -138,6 +138,9 @@ interface Item {
   // Withdrawal-specific (only set on items belonging to a withdraw trade)
   status?: TradeStatus;          // Per-item purchase status, mirrors Trade.status
   error?: TradeFailureCode;      // Failure code, present only on failed withdraw items
+  revertRefundPercent?: number;  // CS2 only: share refunded on a buyer reversal, 0-100. What the listing showed
+                                 //   until the item fills, then the share of what was bought
+  refundAmount?: number;         // Refunded items only: USD that went back to your wallet
 }
 ```
 
@@ -152,6 +155,7 @@ interface ItemOffer {
                                  //   Absent on Rust market items, and on some CS2 marketplace rows.
   maxAmount?: number;            // Max quantity for stackable items (inventory only)
   accepted?: boolean;            // Whether the item is accepted for deposit (inventory and deposit trade items)
+  revertRefundPercent?: number;  // CS2 market items: share refunded if the buyer reverses after delivery, 0-100
 }
 ```
 
@@ -270,7 +274,7 @@ type RevertedBy =
 
 ### TradeFailureCode
 
-Set on `Item.error` for **failed withdraw items**, and on the trade-level `error` only when an entire withdraw failed for one shared reason (mixed/partial failures omit `Trade.error`; read the per-item codes). A small, stable set; `canceled` and `declined` items carry **no** code, since the status itself is the reason.
+Set on `Item.error` for **failed and declined withdraw items**, and on the trade-level `error` only when an entire withdraw failed or was declined for one shared reason (mixed/partial failures omit `Trade.error`; read the per-item codes). A small, stable set; `canceled` items carry **no** code, since the status itself is the reason.
 
 ```typescript
 type TradeFailureCode =
@@ -281,6 +285,8 @@ type TradeFailureCode =
   | 'STEAM_ACCOUNT_RESTRICTED' // Recipient's Steam account can't receive (VAC / ban / hold / private)
   | 'BUYER_TRADE_RESTRICTED'   // The marketplace suspended this buyer (e.g. repeated unaccepted offers),
                                //   usually until a stated time. Distinct from Steam's own restrictions
+  | 'OFFER_NOT_ACCEPTED'       // The Steam offer reached the user and was not accepted (declined,
+                               //   countered, expired). Usually on a declined item
   | 'MARKET_UNAVAILABLE'       // Temporary upstream or our-side issue. Retry later
   | 'PURCHASE_FAILED';         // Unclassified failure (catch-all)
 ```
@@ -296,8 +302,6 @@ type TradeErrorCode =
   | 'USER_INVENTORY_PRIVATE'   // The user's Steam inventory is private
   | 'USER_ESCROW'              // Trades with the user would be held in Steam escrow
   | 'USER_NOT_FOUND'           // No Steam user behind the trade URL
-  | 'OFFER_NOT_ACCEPTED'       // Deposits: the offer reached the user and was not accepted
-                               //   (declined, expired, canceled, items gone)
   | 'SERVICE_UNAVAILABLE'      // A temporary issue on AssetPay's side. Retry later
   | 'MERCHANT_REJECTED'        // Withdrawals: your approval callback rejected the trade
   | 'APPROVAL_TIMEOUT';        // Withdrawals: your approval callback never gave an answer

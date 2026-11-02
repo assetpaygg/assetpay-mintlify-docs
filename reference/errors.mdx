@@ -136,6 +136,7 @@ The errors above are returned **synchronously** when a call is rejected. A withd
 | `TRADE_URL_INVALID` | Recipient's Steam trade URL is invalid or escrow-blocked |
 | `STEAM_ACCOUNT_RESTRICTED` | Recipient's Steam account can't receive (VAC / ban / hold / private) |
 | `BUYER_TRADE_RESTRICTED` | The marketplace suspended this buyer, usually until a stated time |
+| `OFFER_NOT_ACCEPTED` | The Steam offer reached the user and they declined, countered or let it expire |
 | `MARKET_UNAVAILABLE` | Temporary upstream / our-side issue. Retry later |
 | `PURCHASE_FAILED` | Unclassified failure (catch-all) |
 
@@ -147,12 +148,11 @@ The errors above are returned **synchronously** when a call is rejected. A withd
 | `USER_INVENTORY_PRIVATE` | The user's Steam inventory is private |
 | `USER_ESCROW` | Trades with the user would be held in Steam escrow |
 | `USER_NOT_FOUND` | No Steam user behind the trade URL |
-| `OFFER_NOT_ACCEPTED` | Deposits: the offer reached the user and was not accepted |
 | `SERVICE_UNAVAILABLE` | A temporary issue on AssetPay's side. Retry later |
 | `MERCHANT_REJECTED` | Withdrawals: your approval callback rejected the trade |
 | `APPROVAL_TIMEOUT` | Withdrawals: your approval callback never gave an answer |
 
-`canceled` and `declined` items carry no code: the status is the reason. A `declined` withdrawal is buyer fault: items bought from a marketplace are refunded **minus the penalty** the marketplace kept, and items AssetPay fills from its own stock are refunded in full. See [Withdrawals → Per-Item Failure Reasons](/guides/withdrawals#per-item-failure-reasons) for handling guidance.
+`canceled` items carry no code: the status is the reason. `declined` withdraw items carry the reason in `error`, usually `OFFER_NOT_ACCEPTED`. A `declined` withdrawal is buyer fault: items bought from a marketplace are refunded **minus the penalty** the marketplace kept, and items AssetPay fills from its own stock are refunded in full. See [Withdrawals → Per-Item Failure Reasons](/guides/withdrawals#per-item-failure-reasons) for handling guidance.
 
 ## Wallet / Funding Errors
 

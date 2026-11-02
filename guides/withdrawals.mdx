@@ -152,7 +152,7 @@ All rejection paths mark the trade as `failed` with trade-level `error: "MERCHAN
 | `failed` | Trade did not go through. Refund `totalPrice` if you previously deducted it. The failed item(s) carry an `error` code; see [Per-Item Failure Reasons](#per-item-failure-reasons). |
 | `declined` | The user declined or let the Steam offer expire (buyer fault, CS2 only; a declined Rust offer ends as `failed`). Items AssetPay fills from its own stock are refunded in full. Items bought from a marketplace are refunded **minus the penalty the marketplace kept** for the decline. Decide your own user-facing refund: refund in full and absorb any penalty, or pass it on. |
 | `canceled` | Trade canceled before processing. Refund `totalPrice` if you previously deducted it. |
-| `reverted` | A delivered withdrawal was reversed. Check `revertedBy`: with `supplier` your merchant wallet is refunded once the supplier reports the refund, so refund `totalPrice`; with `user` (Steam rolled back the trade after the user accepted it), items bought from a marketplace are forfeited and your wallet is **not** refunded, while CS2 items AssetPay fills from its own stock are refunded in full. See [Trade Reversals](#trade-reversals). |
+| `reverted` | A delivered withdrawal was reversed. Check `revertedBy`: with `supplier` your merchant wallet is refunded once the supplier reports the refund, so refund `totalPrice`; with `user` (Steam rolled back the trade after the user accepted it), your wallet gets back the item's `revertRefundPercent` share of its price, possibly 0, and `refundAmount` on the item says what came back. See [Trade Reversals](#trade-reversals). |
 
 A withdrawal progresses `initiated → pending → active → hold → completed`. The intermediate statuses (`pending`, `active`) are informational; drive your balance logic off `initiated` (deduct) and the terminal states (`completed` / `failed` / `declined` / `canceled` / `reverted`).
 
@@ -167,7 +167,11 @@ In rare cases, a delivered withdrawal is reversed after the user accepted the St
 - `"supplier"`: the marketplace supplier reversed the trade
 - `"user"`: Steam rolled back the trade after the user accepted it. This is not a decline; a declined offer ends in `declined`.
 
-When the supplier reverts a withdrawal, your merchant wallet is refunded automatically once the supplier reports the refund. When `revertedBy` is `"user"`, items bought from a marketplace are forfeited and your wallet is **not** refunded, while CS2 items AssetPay fills from its own stock are refunded in full.
+When the supplier reverts a withdrawal, your merchant wallet is refunded in full automatically once the supplier reports the refund. When `revertedBy` is `"user"`, your wallet gets back the item's refund share.
+
+CS2 listings show that share before you buy, as `offer.revertRefundPercent` (0-100). It can be 0, and a listing with no known share shows 0. If a listing you picked is gone and AssetPay replaces it with another copy, the replacement never refunds less than the listing you picked.
+
+On the trade, each CS2 item carries `revertRefundPercent`: what the listing showed until the item fills, then the share of what was actually bought. Once an item is refunded it carries `refundAmount`, the USD that went back to your wallet. Rust trades cannot be reversed, so Rust listings and items never carry `revertRefundPercent`.
 
 ## Quick Withdrawals
 
@@ -184,6 +188,7 @@ Authorization: CLIENT_TOKEN
 `maxPrice` is the **gross** per-unit ceiling (fee-inclusive, the same `withdraw` price returned by `/secure/prices`). It differs from the standard withdrawal in two ways:
 
 - **Pre-filled rows.** The response returns one item row per requested unit (same minimal shape as a normal buy: id, ceiling `price`, `delivery`), and `totalPrice` set to the worst-case lock (`amount × maxPrice`). On Rust, rows for the same item are merged into one row whose `amount` is the number of units. Each row is bound to a real listing as fills arrive; the trade settles asynchronously, so watch via callbacks or the WebSocket feed.
+- **Refund floor (CS2 only).** Send `minRevertRefundPercent` (0-100) to skip every listing that refunds less on a buyer reversal. A listing with no known share counts as 0. Units nothing can fill under that floor go to `failed` like any other unfilled unit.
 - **Partial fills are normal.** If fewer than `amount` listings are available at or below your ceiling, AssetPay buys what it can; the unfilled rows go to `failed`, the unfilled units and any below-ceiling savings are refunded to your balance, and `totalPrice` is trued up to the actual spend once settled.
 
 Everything else (the `initiated` approval callback, balance locking, per-item status) works exactly like the standard withdrawal. See the API reference for [`POST /client/trading/withdraw/quick`](/api-reference/trading/withdraw-quick) (and the merchant self-trade variant [`POST /secure/buy/quick`](/api-reference/secure/buy-quick)).
@@ -262,7 +267,7 @@ This lets you show per-item progress in your UI for multi-item withdrawals.
 
 ## Per-Item Failure Reasons
 
-When an item ends in `failed`, it carries an `error` field with a stable [`TradeFailureCode`](/reference/types#tradefailurecode) so you can react programmatically:
+When an item ends in `failed` or `declined`, it carries an `error` field with a stable [`TradeFailureCode`](/reference/types#tradefailurecode) so you can react programmatically:
 
 | `error` | What happened | Suggested handling |
 |---------|---------------|--------------------|
@@ -272,7 +277,8 @@ When an item ends in `failed`, it carries an `error` field with a stable [`Trade
 | `TRADE_URL_INVALID` | Recipient's Steam trade URL is invalid or escrow-blocked | Ask the user to fix their trade URL |
 | `STEAM_ACCOUNT_RESTRICTED` | Recipient's Steam can't receive (VAC / ban / hold / private) | User must resolve the Steam restriction |
 | `BUYER_TRADE_RESTRICTED` | The marketplace suspended this buyer (for example after repeated unaccepted offers), usually until a stated time | Wait for the suspension to lift |
+| `OFFER_NOT_ACCEPTED` | The user declined, countered or let the Steam offer expire. Usually on a `declined` item | Ask the user to accept the offer next time |
 | `MARKET_UNAVAILABLE` | Temporary upstream / our-side issue | Retry later |
 | `PURCHASE_FAILED` | Unclassified failure | Reconcile, then retry or surface to the user |
 
-The **trade-level** `error` is present only when the trade failed for one shared reason; otherwise it is omitted, so read the per-item `error` values. Besides the codes above it can be `MERCHANT_REJECTED` (you rejected the approval callback), `APPROVAL_TIMEOUT` (the approval callback never got an answer), `SERVICE_UNAVAILABLE` (a problem on AssetPay's side), or a `USER_*` code (`USER_TRADE_RESTRICTED`, `USER_INVENTORY_PRIVATE`, `USER_ESCROW`, `USER_NOT_FOUND`). `canceled` and `declined` items carry no `error`; the status itself is the reason. The raw upstream detail is kept internal and never surfaced.
+The **trade-level** `error` is present only when the trade failed for one shared reason; otherwise it is omitted, so read the per-item `error` values. Besides the codes above it can be `MERCHANT_REJECTED` (you rejected the approval callback), `APPROVAL_TIMEOUT` (the approval callback never got an answer), `SERVICE_UNAVAILABLE` (a problem on AssetPay's side), or a `USER_*` code (`USER_TRADE_RESTRICTED`, `USER_INVENTORY_PRIVATE`, `USER_ESCROW`, `USER_NOT_FOUND`). `canceled` items carry no `error`; the status itself is the reason. The raw upstream detail is kept internal and never surfaced.
