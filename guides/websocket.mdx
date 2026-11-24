@@ -118,7 +118,7 @@ socket.on('market', (event) => {
 | Field | Type | Description |
 |-------|------|-------------|
 | `game` | number | App id: `730` for CS2, `252490` for Rust. Absent on the `sync` sent on connect |
-| `source` | string | Market lane. Always `"internal"`. Absent on the `sync` sent on connect |
+| `source` | string | Market lane: `"internal"` for the AssetPay pool, `"external"` for a removed third-party listing. Absent on the `sync` sent on connect |
 | `type` | string | `"upsert"`, `"patch"`, `"remove"`, or `"sync"` |
 | `item` | object | Present on `upsert` and `patch`. The full item, same shape as `/secure/market` items |
 | `itemId` | string | Present on `remove`. The `id` of the item to drop |

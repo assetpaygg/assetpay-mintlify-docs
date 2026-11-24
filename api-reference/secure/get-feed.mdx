@@ -1,0 +1,69 @@
+---
+title: "Get Feed Login"
+description: "Return your read-only login to the market feed Redis: the AssetPay pool and third-party listings, priced for your account."
+---
+
+Returns a read-only login to the [market feed](/guides/merchant-feed): a live copy of every CS2 listing you can buy, priced for your account, as Redis hashes and one change stream per book. Call it whenever you connect; the login is applied before it is returned.
+
+**Authentication:** API Key (`api-key` header, requires `CORE_ACCESS` scope)
+
+## Request
+
+```http
+GET https://api.assetpay.gg/secure/feed
+api-key: YOUR_API_KEY
+```
+
+## Response
+
+```json
+{
+  "requestId": "...",
+  "success": true,
+  "data": {
+    "url": "rediss://m_<merchantId>:<password>@feed.assetpay.gg:6390",
+    "host": "feed.assetpay.gg",
+    "port": 6390,
+    "tls": true,
+    "username": "m_<merchantId>",
+    "password": "<password>",
+    "depth": 100,
+    "instantMin": 30,
+    "keys": {
+      "state": "feed:state",
+      "meta": "feed:l:<lane>:meta",
+      "internal": {
+        "items": "feed:internal:items",
+        "rows": "feed:internal:rows:",
+        "prices": "feed:l:<lane>:internal:p:",
+        "stream": "feed:internal:stream"
+      },
+      "external": {
+        "items": "feed:external:items",
+        "rows": "feed:external:rows:",
+        "prices": "feed:l:<lane>:external:p:",
+        "stream": "feed:external:stream"
+      }
+    }
+  }
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `url` | string | Connection URL; use it as is, with no INFO-based ready check |
+| `username`, `password` | string | The same login, split out |
+| `depth` | integer | Most external listings held per item and phase |
+| `instantMin` | integer | External instant listings held per item and phase when it has that many |
+| `keys.state` | string | Hash: `t`, `gen`, `frozen`, `depth`, `instantMin` |
+| `keys.meta` | string | Hash: `ready` is `1` once your prices are complete |
+| `keys.internal`, `keys.external` | object | Per book: `items` hash, `rows` and `prices` key prefixes (+ item key), `stream` |
+
+The password changes only when you rotate it on the dashboard. A `NOPERM` from Redis means your login moved (rotation or a pricing change): call this endpoint again.
+
+## Errors
+
+| Status | Key | When |
+|--------|-----|------|
+| 403 | `FEED_NOT_ENABLED` | The feed was turned off for your account |
+| 503 | `FEED_NOT_READY` | The feed is not available yet; retry later |

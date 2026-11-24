@@ -1,5 +1,5 @@
 ---
-title: "Price Feed (Redis)"
+title: "Price Feed (Redis, earlier)"
 description: "Tail the AssetPay price feed over Redis Streams instead of polling: connection, stream keys, event format, and snapshot-then-tail consumption."
 ---
 
@@ -8,6 +8,10 @@ description: "Tail the AssetPay price feed over Redis Streams instead of polling
 The AssetPay **price feed** is a low-latency stream of item and price changes, delivered over **Redis Streams** at `feed.assetpay.gg`. Instead of polling the REST API, you tail a stream and react to each change as it happens - items entering the pool, items leaving, and price updates.
 
 Each consumer reads a **snapshot** of current state once, then **tails the stream** for incremental changes. If you fall behind or reconnect, you re-read the snapshot and resume - no events are lost.
+
+<Note>
+This is the earlier feed: the AssetPay pool only, with credentials issued by AssetPay. It stays available and unchanged. The [Market Feed](/guides/merchant-feed) carries the pool and third-party listings, priced for your account, and you connect to it with your API key.
+</Note>
 
 <Note>
 The feed requires separately provisioned credentials. If you only need your own priced view of the market (the CS2 pool items `/secure/market?source=internal` returns, priced for your account), the WebSocket [Market Updates](/guides/websocket#market-updates) event covers that with just your API key.

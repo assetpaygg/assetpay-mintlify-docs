@@ -1,0 +1,176 @@
+---
+title: "Market Feed (Redis)"
+description: "A live copy of everything you can buy, priced for your account: the AssetPay pool and third-party marketplace listings, over Redis, with one API call to connect."
+---
+
+## Overview
+
+The **market feed** is a live, read-only copy of every CS2 listing you can buy through `/secure/buy`, priced for your account. It holds two books:
+
+| Book | Contents |
+|------|----------|
+| `internal` | The AssetPay pool: items held by AssetPay bots, delivered instantly. |
+| `external` | Third-party marketplace listings, up to 100 per item and phase, at least 30 of them instant where the item has that many. |
+
+You choose `all` (both books, the default), `internal` or `external` when you connect. Every listing's price is what `/secure/buy` charges you for it, so the listing `id` and `price` can be passed to a buy as they are.
+
+You connect with your API key: no certificate file, no IP allowlist and no credentials to request.
+
+<Note>
+The earlier [Price Feed](/guides/price-feed) stays available and unchanged. It carries the AssetPay pool only and needs credentials issued by AssetPay.
+</Note>
+
+## Quick start (SDK)
+
+```ts
+import { AssetPay } from '@assetpay/assetpay-sdk';
+import { Redis } from 'ioredis';
+
+const ap = new AssetPay({ apiKey: process.env.ASSETPAY_API_KEY! });
+
+const feed = ap.market.syncFeed(
+  {
+    onUpsert: (listing) => console.log(listing.source, listing.id, listing.price),
+    onRemove: (id, itemKey, source) => console.log('gone', source, id),
+    onError: (err, fatal) => console.error(err, fatal),
+  },
+  { Redis, source: 'all' },
+);
+
+await feed.ready;
+console.log(`${feed.listings.size} listings`);
+```
+
+`syncFeed` fetches your login, waits until your prices are ready, loads both books, then follows their streams. It reloads by itself when the feed is refilled, when it fell too far behind, and when your login changes.
+
+## Connecting by hand
+
+<Steps>
+<Step title="Get your login">
+`GET /secure/feed` with your API key returns a `rediss://` URL and the key names for your account:
+
+```json
+{
+  "url": "rediss://m_<merchantId>:<password>@feed.assetpay.gg:6390",
+  "host": "feed.assetpay.gg",
+  "port": 6390,
+  "tls": true,
+  "username": "m_<merchantId>",
+  "password": "<password>",
+  "depth": 100,
+  "instantMin": 30,
+  "keys": {
+    "state": "feed:state",
+    "meta": "feed:l:<lane>:meta",
+    "internal": {
+      "items": "feed:internal:items",
+      "rows": "feed:internal:rows:",
+      "prices": "feed:l:<lane>:internal:p:",
+      "stream": "feed:internal:stream"
+    },
+    "external": {
+      "items": "feed:external:items",
+      "rows": "feed:external:rows:",
+      "prices": "feed:l:<lane>:external:p:",
+      "stream": "feed:external:stream"
+    }
+  }
+}
+```
+
+Connect with the URL as is. The certificate is public, so no CA file is needed. Turn off any INFO-based ready check (ioredis: `enableReadyCheck: false`); your login cannot run `INFO`.
+</Step>
+<Step title="Wait until your prices are ready">
+`HGET <keys.meta> ready` returns `1` once every price on your lane is written. Poll every few seconds until then.
+</Step>
+<Step title="Note each stream position">
+For each book you read, `XREVRANGE <stream> + - COUNT 1` before loading, so nothing written while you load is missed.
+</Step>
+<Step title="Load">
+`HGETALL <items>` gives every item key. For each one, `HGETALL <rows><itemKey>` and `HGETALL <prices><itemKey>`. A listing exists when it has both a row and a price.
+</Step>
+<Step title="Follow">
+`XREAD BLOCK 5000 STREAMS <stream...> <position...>` in a loop, applying each entry and advancing that stream's position.
+</Step>
+</Steps>
+
+## Keys
+
+| Key | Type | Contents |
+|-----|------|----------|
+| `items` | Hash | item key → item JSON |
+| `rows` + item key | Hash | listing id → listing JSON, without a price |
+| `prices` + item key | Hash | listing id → your price, a USD decimal string (`"12.34"`) |
+| `stream` | Stream | changes, oldest first |
+| `state` | Hash | `t` (last write, Unix ms), `gen`, `frozen`, `depth`, `instantMin` |
+| `meta` | Hash | `ready` |
+
+An **item key** is the catalog `itemId`, or `itemId:Phase_2` for a Doppler phase, the same `itemId` `/secure/prices` returns.
+
+### Item
+
+```json
+{
+  "itemId": "a3f09c1d5e7b2468",
+  "phase": null,
+  "name": "AK-47 | Redline (Field-Tested)",
+  "marketHashName": "AK-47 | Redline (Field-Tested)",
+  "type": "Rifle",
+  "iconUrl": "https://...",
+  "exterior": "Field-Tested",
+  "rarity": "Classified",
+  "color": "#d32ce6"
+}
+```
+
+### Listing
+
+```json
+{
+  "id": "0199aaaa-bbbb-8ccc-8ddd-eeeeffff0001",
+  "delivery": "instant",
+  "wear": "0.152",
+  "paintSeed": 77,
+  "paintIndex": 282,
+  "stickers": [{ "name": "Sticker | Crown (Foil)" }],
+  "assetId": "41234567890",
+  "previewToken": "...",
+  "revertRefundPercent": 50
+}
+```
+
+`id` and `delivery` (`instant` or `standard`) are always present; every other field is left out when it has no value. `revertRefundPercent` is the share of the price refunded if you reverse a delivered trade (external listings only). Ignore fields you don't recognise.
+
+## Stream entries
+
+Each entry has `type` and `data`, a JSON string `{ "id", "itemKey" }`.
+
+| `type` | Meaning | Read |
+|--------|---------|------|
+| `item.add` | A listing entered the book, or its row changed | its row and price |
+| `price.update` | Its price changed | its price |
+| `item.remove` | It left the book | nothing |
+
+Only the last entry per listing matters, so collapse a batch before reading. A listing whose Doppler phase was corrected arrives as an `item.add` under its new item key; drop the old one. A remove for a listing you don't hold is a no-op.
+
+## Staying in sync
+
+Reload from step 2 when any of these happens:
+
+- **`gen` changed** in `state`: the feed was rebuilt.
+- **The stream was trimmed past your position**: `XINFO STREAM <stream>` returns a `max-deleted-entry-id` above the last id you read. Streams keep about 200,000 entries.
+- **`NOPERM`**: your login changed, because your password was rotated or your pricing changed. Fetch the login again first.
+
+Check `gen` and the trim point every few seconds while you follow.
+
+When `frozen` is `1`, external prices may be stale and buys of external listings are more likely to be refused. If the external book stays unavailable for 15 minutes, its listings are removed through the stream and come back the same way.
+
+## Your login
+
+- It can only read: both books, `state`, and your own prices. Anything else returns `NOPERM`, and listing keys with `SCAN` or `KEYS` is not allowed.
+- Rotate the password from the dashboard (`POST /merchants/me/feed/rotate`). The old password stops working at once, open connections included.
+- Prices follow your pricing. When your pricing changes, your login moves to the new prices and the old keys return `NOPERM`.
+
+## Buying
+
+Pass the listing `id` as `itemId` and the feed `price` as `price` to [`/secure/buy`](/api-reference/secure/buy). If the price moved since you read it, a drop is charged at the current price, a rise within your `slippageBps` or `maxPrice` is charged at the current price, and a larger rise is refused with `PRICE_CHANGED` before anything is charged. A trade holds listings of one book only.

@@ -26,7 +26,7 @@ api-key: ap_...
 | `maxPrice` | number | - | Maximum price filter (USD, `0` or more) |
 | `page` | number | `1` | Page number |
 | `perPage` | number | `50` | Items per page (1–1000), or `-1` to return every matching item |
-| `source` | string | - | CS2 only. Set to `internal` to restrict results to the AssetPay pool, or `external` to restrict them to third-party marketplace listings (refreshed every 5 minutes). Omit for both. Ignored when `development` is set. |
+| `source` | string | - | CS2 only. Set to `internal` to restrict results to the AssetPay pool, or `external` to restrict them to third-party marketplace listings (refreshed every minute). Omit for both. Ignored when `development` is set. |
 | `development` | boolean | `false` | Sandbox flag. When `true` (or `1`), every returned item is stamped with instant delivery, a random `assetId`, a placeholder `previewToken`, and a synthetic holding `botInfo` so you can build against the full item shape using cheap real listings. Third-party listings are limited to instant-delivery rows, and the `source` filter is ignored. |
 
 ## Response
