@@ -158,10 +158,10 @@ Only the last entry per listing matters, so collapse a batch before reading. A l
 Reload from step 2 when any of these happens:
 
 - **`gen` changed** in `state`: the feed was rebuilt.
-- **The stream was trimmed past your position**: `XINFO STREAM <stream>` returns a `max-deleted-entry-id` above the last id you read. Streams keep about 200,000 entries.
+- **The stream was trimmed past your position**: the oldest entry still in the stream (`XRANGE <stream> - + COUNT 1`, or `first-entry` in `XINFO STREAM`) is newer than the last id you read. Streams keep about 200,000 entries, which is only a few minutes of the external book, so a reader that stops for longer reloads. Don't use `max-deleted-entry-id`: trimming never moves it.
 - **`NOPERM`**: your login changed, because your password was rotated or your pricing changed. Fetch the login again first.
 
-Check `gen` and the trim point every few seconds while you follow.
+Check `gen` and the oldest stream entry every few seconds while you follow.
 
 When `frozen` is `1`, external prices may be stale and buys of external listings are more likely to be refused. If the external book stays unavailable for 15 minutes, its listings are removed through the stream and come back the same way.
 
